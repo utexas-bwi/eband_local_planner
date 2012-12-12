@@ -1,0 +1,27 @@
+<package>
+  <description brief="segbot_controller">
+
+     segbot_controller
+
+  </description>
+  <author>lab</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/segbot_controller</url>
+
+
+  <rosdep name="qt4"/>
+
+  <!-- rosbuild1 -->
+  <depend package="qt_build"/>
+  <depend package="roscpp"/>
+  <depend package="move_base_msgs"/>
+  <depend package="actionlib" />
+  
+  <rosbuild2>
+    <depend package="qt_build"/>
+    <depend package="roscpp"/>
+    <depend package="move_base_msgs"/>
+  </rosbuild2>
+  
+</package>

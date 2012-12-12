@@ -1,0 +1,15 @@
+<launch>
+
+  <!--- Run the segway -->
+  <include file="$(find segbot_run)/launch/segway.launch" />
+
+  <!--- Run the kinect -->
+  <include file="$(find segbot_navigation)/launch/kinect.launch" />
+
+  <!--- Run gmapping -->
+  <include file="$(find segbot_navigation)/launch/gmapping.launch" />
+
+  <!--- Run Move Base -->
+  <include file="$(find segbot_navigation)/launch/move_base.launch" />
+
+</launch>
