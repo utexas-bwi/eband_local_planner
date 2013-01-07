@@ -1,7 +1,0 @@
-image: ens-basement-2012-05-17.pgm
-resolution: 0.050000
-origin: [-2.6, -3.1, 0.0]
-negate: 0
-occupied_thresh: 0.65
-free_thresh: 0.196
-
