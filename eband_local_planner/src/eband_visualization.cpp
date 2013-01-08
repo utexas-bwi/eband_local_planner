@@ -335,7 +335,7 @@ void EBandVisualization::forceToMarker(geometry_msgs::WrenchStamped wrench, geom
 		// transform quaternion back from Eigen to ROS
 		tf::Quaternion orientation_tf;
 		geometry_msgs::Quaternion orientation_msg;
-		tf::RotationEigenToTF(rotate_quat, orientation_tf);
+		tf::quaternionEigenToTF(rotate_quat, orientation_tf);
 		tf::quaternionTFToMsg(orientation_tf, orientation_msg);
 	
 		// finally set orientation of marker

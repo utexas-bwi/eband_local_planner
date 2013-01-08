@@ -332,7 +332,7 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 	std::vector<geometry_msgs::PoseStamped> refined_plan;
 	if(eband_->getPlan(refined_plan))
 		// TODO publish local and current gloabl plan
-		base_local_planner::publishPlan(refined_plan, g_plan_pub_, 0.0, 1.0, 0.0, 0.0);
+		base_local_planner::publishPlan(refined_plan, g_plan_pub_);
 	//base_local_planner::publishPlan(local_plan, l_plan_pub_, 0.0, 0.0, 1.0, 0.0);
 
 	// display current band
@@ -361,8 +361,13 @@ bool EBandPlannerROS::isGoalReached()
 		base_odom = base_odom_;
 	}
 
+  costmap_2d::Costmap2D costmap;
+  costmap_ros_->getCostmapCopy(costmap);
+  tf::Stamped<tf::Pose> global_pose;
+  costmap_ros_->getRobotPose(global_pose);
+
 	// analogous to dwa_planner the actual check uses the routine implemented in trajectory_planner (trajectory rollout) 
-	return base_local_planner::isGoalReached(*tf_, global_plan_, *costmap_ros_, costmap_ros_->getGlobalFrameID(), base_odom, 
+	return base_local_planner::isGoalReached(*tf_, global_plan_, costmap, costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
 				rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_, yaw_goal_tolerance_);
 }
 

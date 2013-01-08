@@ -28,6 +28,7 @@
   <depend package="control_toolbox"/>
 
   <depend package="actionlib"/>
+  <depend package="actionlib_msgs"/>
 
   <rosdep name="eigen" />
   <rosdep name="tinyxml" />
