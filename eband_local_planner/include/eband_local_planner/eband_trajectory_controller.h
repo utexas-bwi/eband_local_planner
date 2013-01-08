@@ -133,7 +133,7 @@ class EBandTrajectoryCtrl{
 		// parameters
                 double k_p_, k_nu_, ctrl_freq_;
 		double acc_max_, virt_mass_;
-		double max_vel_lin_, max_vel_rev_lin_, max_vel_th_, min_vel_lin_, min_vel_th_;
+		double max_vel_lin_, max_vel_th_, min_vel_lin_, min_vel_th_;
 		double min_in_place_vel_th_;
 		double in_place_trans_vel_;
 		double tolerance_trans_, tolerance_rot_, tolerance_timeout_;
@@ -163,24 +163,9 @@ class EBandTrajectoryCtrl{
 		 * @return vector from frame1 to frame2 in coordinates of the reference frame 
 		 */
 		geometry_msgs::Twist getFrame1ToFrame2InRefFrame(const geometry_msgs::Pose& frame1, const geometry_msgs::Pose& frame2, const geometry_msgs::Pose& ref_frame);
-
-                /**
-		 * @brief Transforms Pose of bubble 1 and 2 into reference frame and gets difference of bubble 1 and 2 without using bubble orientation
-		 * @param refernce to pose of bubble1
-		 * @param reference to pose of bubble2
-		 * @param reference to pose of reference frame
-		 * @return vector from bubble1 to bubble2 in coordinates of the reference frame 
-		 */
-		geometry_msgs::Twist getBubbleDiffInRefFrame(const geometry_msgs::Pose& bubble1, const geometry_msgs::Pose& bubble2, const geometry_msgs::Pose& ref_frame);
-
-		/**
-		 * @brief Determines whether at end of band, in order to rotate in place
-                 * @return boolean true or false if at band
-                 */
-                bool hasReachedTranslationalEndOfBand();
 		
 		/**
-		 * @brief Transforms twist into a given reference frame
+		 * @param Transforms twist into a given reference frame
 		 * @param Twist that shall be transformed
 		 * @param refernce to pose of frame1
 		 * @param reference to pose of frame2

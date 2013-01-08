@@ -73,7 +73,6 @@ void EBandTrajectoryCtrl::initialize(std::string name, costmap_2d::Costmap2DROS*
 	
 		// read parameters from parameter server
 		node_private.param("max_vel_lin", max_vel_lin_, 0.6);
-                node_private.param("max_vel_rev_lin", max_vel_rev_lin_, 0.3);
 		node_private.param("max_vel_th", max_vel_th_, 1.5);
 
 		node_private.param("min_vel_lin", min_vel_lin_, 0.1);
@@ -144,8 +143,7 @@ bool EBandTrajectoryCtrl::setBand(const std::vector<Bubble>& elastic_band)
 bool EBandTrajectoryCtrl::setOdometry(const nav_msgs::Odometry& odometry)
 {
 	odom_vel_.linear.x = odometry.twist.twist.linear.x;
-	//odom_vel_.linear.y = odometry.twist.twist.linear.y;
-        odom_vel_.linear.y = odometry.twist.twist.linear.y;
+	odom_vel_.linear.y = odometry.twist.twist.linear.y;
 	odom_vel_.linear.z = 0.0;
 	odom_vel_.angular.x = 0.0;
 	odom_vel_.angular.y = 0.0;
@@ -209,9 +207,9 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 
 	// get difference and distance between bubbles in odometry frame
 	double bubble_distance, ang_pseudo_dist;
-	bubble_diff = getBubbleDiffInRefFrame(elastic_band_.at(0).center.pose,
+	bubble_diff = getFrame1ToFrame2InRefFrame(elastic_band_.at(0).center.pose,
 												elastic_band_.at(1).center.pose,
-													elastic_band_.at(0).center.pose);
+													ref_frame_band_);
 	ang_pseudo_dist = bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
 	bubble_distance = sqrt( (bubble_diff.linear.x * bubble_diff.linear.x) + (bubble_diff.linear.y * bubble_diff.linear.y) +
 						(ang_pseudo_dist * ang_pseudo_dist) );
@@ -254,9 +252,9 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 			// get difference between next and next but one bubble
 			double next_bubble_distance;
 			geometry_msgs::Twist next_bubble_diff;
-			next_bubble_diff = getBubbleDiffInRefFrame(elastic_band_.at(1).center.pose,
+			next_bubble_diff = getFrame1ToFrame2InRefFrame(elastic_band_.at(1).center.pose,
 															elastic_band_.at(2).center.pose,
-																elastic_band_.at(0).center.pose);
+																ref_frame_band_);
 			ang_pseudo_dist = next_bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
 			next_bubble_distance = sqrt( (next_bubble_diff.linear.x * next_bubble_diff.linear.x) +
 											(next_bubble_diff.linear.y * next_bubble_diff.linear.y) +
@@ -345,22 +343,16 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 
 
         const geometry_msgs::Point& goal = (--elastic_band_.end())->center.pose.position;
-        const geometry_msgs::Quaternion& goal_orientation = (--elastic_band_.end())->center.pose.orientation;
         const double dx = elastic_band_.at(0).center.pose.position.x - goal.x;
         const double dy = elastic_band_.at(0).center.pose.position.y - goal.y;
-        const double dth = angles::normalize_angle(elastic_band_.at(0).center.pose.orientation.z - goal_orientation.z);
         const double dist_to_goal = sqrt(dx*dx + dy*dy);
-
-
-// This code tries to match the robots orientation to the bubble orientation, which only works for holonomic robots
-// Disabling for differential drive trials
-/*        
+        
         // Assuming we're far enough from the final goal, make sure to rotate so
         // we're facing the right way
         if (dist_to_goal > rotation_correction_threshold_)
         {
         
-          co/home/pstrong/.ros/rosmake/rosmake_output-20121204-215155/eband_local_planner/build_output.lognst double angular_diff = angularDiff(control_deviation, elastic_band_.at(0).center.pose);
+          const double angular_diff = angularDiff(control_deviation, elastic_band_.at(0).center.pose);
           const double vel = pid_.updatePid(-angular_diff, ros::Duration(1/ctrl_freq_));
           const double mult = fabs(vel) > max_vel_th_ ? max_vel_th_/fabs(vel) : 1.0;
           control_deviation.angular.z = vel*mult;
@@ -387,7 +379,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
                                     "Not applying angle correction because "
                                     "distance to goal is %.2f", dist_to_goal);
                                     
-*/        
+        
 
 
 	// now the actual control procedure start (using attractive Potentials)
@@ -396,20 +388,13 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	double scale_des_vel;
 	desired_velocity = robot_cmd;
 	currbub_maxvel_dir = robot_cmd;
-        const bool has_reached_end = hasReachedTranslationalEndOfBand();
-
-        // If last bubble, then just rotate
-        if(has_reached_end) {
-          control_deviation.angular.z = -1 * dth;
-          control_deviation.linear.x = 0;
-        }
 	
 	// calculate "equilibrium velocity" (Khatib86 - Realtime Obstacle Avoidance)
-	desired_velocity.linear.x = (k_p_/k_nu_) * control_deviation.linear.x;
-        //desired_velocity.linear.x = 0;
-	//desired_velocity.linear.y = k_p_/k_nu_ * control_deviation.linear.y;
-        desired_velocity.linear.y = 0.0;
-        desired_velocity.angular.z = k_p_/k_nu_ * control_deviation.angular.z;
+	desired_velocity.linear.x = k_p_/k_nu_ * control_deviation.linear.x;
+	desired_velocity.linear.y = k_p_/k_nu_ * control_deviation.linear.y;
+	desired_velocity.angular.z = k_p_/k_nu_ * control_deviation.angular.z;
+
+	//robot_cmd = desired_velocity;
 
 	// get max vel for current bubble
 	int curr_bub_num = 0;
@@ -425,8 +410,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 		scale_des_vel = currbub_maxvel_abs / desvel_abs;
 		desired_velocity.linear.x *= scale_des_vel;
 		desired_velocity.linear.y *= scale_des_vel;
-                // Don't stop rotating on last bubble
-                if(scale_des_vel != 0.0) desired_velocity.angular.z *= scale_des_vel;
+		desired_velocity.angular.z *= scale_des_vel;
 	}
 
 	// make sure to stay within velocity bounds for the robot
@@ -438,7 +422,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 		desired_velocity.linear.x *= scale_des_vel;
 		desired_velocity.linear.y *= scale_des_vel;
 		// to make sure we are staying inside the bubble also scale rotation
-		//desired_velocity.angular.z *= scale_des_vel;
+		desired_velocity.angular.z *= scale_des_vel;
 	}
 
 	// for rotation
@@ -454,9 +438,9 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	// calculate resulting force (accel. resp.) (Khatib86 - Realtime Obstacle Avoidance)
 	geometry_msgs::Twist acc_desired;
 	acc_desired = robot_cmd;
-	acc_desired.linear.x = k_nu_ * (desired_velocity.linear.x - last_vel_.linear.x);
-	acc_desired.linear.y = k_nu_ * (desired_velocity.linear.y - last_vel_.linear.y);
-	acc_desired.angular.z = k_nu_ * (desired_velocity.angular.z - last_vel_.angular.z);
+	acc_desired.linear.x = (1.0/virt_mass_) * k_nu_ * (desired_velocity.linear.x - last_vel_.linear.x);
+	acc_desired.linear.y = (1.0/virt_mass_) * k_nu_ * (desired_velocity.linear.y - last_vel_.linear.y);
+	acc_desired.angular.z = (1.0/virt_mass_) * k_nu_ * (desired_velocity.angular.z - last_vel_.angular.z);
 
 	// constrain acceleration
 	double scale_acc;
@@ -484,14 +468,6 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	last_vel_.linear.y = last_vel_.linear.y + acc_desired.linear.y / ctrl_freq_;
 	last_vel_.angular.z = last_vel_.angular.z + acc_desired.angular.z / ctrl_freq_;
 
-        double newvel_abs_trans = sqrt( (last_vel_.linear.x * last_vel_.linear.x) + (last_vel_.linear.y * last_vel_.linear.y) );
-        // If we want to get to a high speed make sure we at least start at the min speed (to avoid rotating in place only)
-        if (desvel_abs_trans > min_vel_lin_ && newvel_abs_trans < min_vel_lin_) {
-		double scale_newvel = newvel_abs_trans / min_vel_lin_;
-                last_vel_.linear.x *= scale_newvel;
-                last_vel_.linear.y *= scale_newvel;
-        }
-
 
 	// we are almost done now take into accoun stick-slip and similar nasty things
 
@@ -502,12 +478,10 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	robot_cmd = last_vel_;
 
 	// now convert into robot-body frame
-	robot_cmd = transformTwistFromFrame1ToFrame2(robot_cmd, elastic_band_.at(0).center.pose, elastic_band_.at(0).center.pose);
+	robot_cmd = transformTwistFromFrame1ToFrame2(robot_cmd, ref_frame_band_, elastic_band_.at(0).center.pose);
 
 	// check whether we reached the end of the band
 	int curr_target_bubble = 1;
-	bubble_diff = getFrame1ToFrame2InRefFrame(elastic_band_.at(0).center.pose, elastic_band_.at(curr_target_bubble).center.pose,
-                                                            elastic_band_.at(0).center.pose);
 	while(fabs(bubble_diff.linear.x) <= tolerance_trans_ &&
 			fabs(bubble_diff.linear.y) <= tolerance_trans_ &&
 			fabs(bubble_diff.angular.z) <= tolerance_rot_)
@@ -518,16 +492,15 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
                   // transform next target bubble into robot-body frame
                   // and get difference to robot bubble
                   bubble_diff = getFrame1ToFrame2InRefFrame(elastic_band_.at(0).center.pose, elastic_band_.at(curr_target_bubble).center.pose,
-                                                            elastic_band_.at(0).center.pose);
+                                                            ref_frame_band_);
 		}
 		else
 		{
-                  ROS_DEBUG_THROTTLE (1.0,
+                  ROS_DEBUG_THROTTLE_NAMED (1.0, "controller_state",
                                             "Goal reached with distance %.2f, %.2f, %.2f"
                                             "; sending zero velocity",
                                             bubble_diff.linear.x, bubble_diff.linear.y,
                                             bubble_diff.angular.z);
-
                   // goal position reached
                   robot_cmd.linear.x = 0.0;
                   robot_cmd.linear.y = 0.0;
@@ -571,8 +544,8 @@ double EBandTrajectoryCtrl::getBubbleTargetVel(const int& target_bub_num, const 
 
 	// get distance to next bubble center
 	ROS_ASSERT( (target_bub_num >= 0) && ((target_bub_num +1) < (int) band.size()) );
-	bubble_diff = getBubbleDiffInRefFrame(band.at(target_bub_num).center.pose, band.at(target_bub_num + 1).center.pose,
-												band.at(0).center.pose);
+	bubble_diff = getFrame1ToFrame2InRefFrame(band.at(target_bub_num).center.pose, band.at(target_bub_num + 1).center.pose,
+												ref_frame_band_);
 	angle_to_pseudo_vel = bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
 
 	bubble_distance = sqrt( (bubble_diff.linear.x * bubble_diff.linear.x) + (bubble_diff.linear.y * bubble_diff.linear.y) +
@@ -646,38 +619,6 @@ geometry_msgs::Twist EBandTrajectoryCtrl::getFrame1ToFrame2InRefFrame(const geom
 	return frame_diff;
 }
 
-geometry_msgs::Twist EBandTrajectoryCtrl::getBubbleDiffInRefFrame(const geometry_msgs::Pose& bubble1, const geometry_msgs::Pose& bubble2, const geometry_msgs::Pose& ref_frame) {
-	geometry_msgs::Twist bubble_diff = getFrame1ToFrame2InRefFrame(bubble1, bubble2, ref_frame);
-        bubble_diff.angular.z = atan2(bubble_diff.linear.y, bubble_diff.linear.x);
-        bubble_diff.angular.z = angles::normalize_angle(bubble_diff.angular.z);
-
-        return bubble_diff;
-}
-
-bool EBandTrajectoryCtrl::hasReachedTranslationalEndOfBand() {
-  	int curr_target_bubble = 1;
-        geometry_msgs::Twist bubble_diff = getBubbleDiffInRefFrame(elastic_band_.at(0).center.pose, elastic_band_.at(curr_target_bubble).center.pose,
-                                                            elastic_band_.at(0).center.pose);
-
-	while(fabs(bubble_diff.linear.x) <= tolerance_trans_ &&
-			fabs(bubble_diff.linear.y) <= tolerance_trans_)
-	{
-		if(curr_target_bubble < ((int) elastic_band_.size()) - 1)
-		{
-                  curr_target_bubble++;
-                  // transform next target bubble into robot-body frame
-                  // and get difference to robot bubble
-                  bubble_diff = getBubbleDiffInRefFrame(elastic_band_.at(0).center.pose, elastic_band_.at(curr_target_bubble).center.pose,
-                                                            elastic_band_.at(0).center.pose);
-		}
-		else
-		{
-                	return true;
-                }
-	}
-	return false;
-}
-
 
 geometry_msgs::Twist EBandTrajectoryCtrl::transformTwistFromFrame1ToFrame2(const geometry_msgs::Twist& curr_twist,
 															const geometry_msgs::Pose& frame1, const geometry_msgs::Pose& frame2)
@@ -730,6 +671,7 @@ geometry_msgs::Twist EBandTrajectoryCtrl::limitTwist(const geometry_msgs::Twist&
 	if (fabs(res.angular.z) > max_vel_th_)
 	{
 		double scale = max_vel_th_/fabs(res.angular.z);
+		//res.angular.z = max_vel_th_ * sign(res.angular.z);
 		res.angular.z *= scale;
 		// keep relations
 		res.linear.x *= scale;
@@ -738,11 +680,6 @@ geometry_msgs::Twist EBandTrajectoryCtrl::limitTwist(const geometry_msgs::Twist&
 
 	if (fabs(res.angular.z) < min_vel_th_) res.angular.z = min_vel_th_ * sign(res.angular.z);
 	// we cannot keep relations here for stability reasons
-
-        // Make sure we don't back up if we are not supposed to.
-        if(sign(res.linear.x) == -1 && fabs(res.linear.x) > max_vel_rev_lin_) {
-        	res.linear.x = -1 * max_vel_rev_lin_;
-        }
 
 	//we want to check for whether or not we're desired to rotate in place
 	if(sqrt(twist.linear.x * twist.linear.x + twist.linear.y * twist.linear.y) < in_place_trans_vel_)
