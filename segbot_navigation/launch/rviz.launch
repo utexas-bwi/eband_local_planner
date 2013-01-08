@@ -1,8 +1,5 @@
 <launch>
-
-  <include file="$(find segbot_description)/launch/segbot_description.launch" />
-
-  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find segbot_navigation)/rviz/nav_rviz.vcg" launch-prefix="optirun" /> -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find segbot_navigation)/rviz/nav_rviz.vcg"/>
-
+  <node name="rviz" pkg="rviz" type="rviz" 
+        args="-d $(find segbot_navigation)/rviz/nav.rviz" 
+        launch-prefix="$(optenv OPTIRUN_LAUNCH_PREFIX)" />
 </launch>

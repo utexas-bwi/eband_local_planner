@@ -1,9 +1,0 @@
-<launch>
-
-  <!--- Run AMCL -->
-  <include file="$(find segbot_navigation)/launch/amcl.launch" />
-
-  <!--- Run Move Base -->
-  <include file="$(find segbot_navigation)/launch/move_base.launch" />
-
-</launch>
