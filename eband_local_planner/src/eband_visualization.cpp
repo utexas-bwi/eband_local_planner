@@ -220,7 +220,8 @@ void EBandVisualization::bubbleToMarker(Bubble bubble, visualization_msgs::Marke
 	marker.pose = bubble.center.pose;
 	// get theta-angle to display as elevation
 	PoseToPose2D(bubble.center.pose, tmp_pose2d);
-	marker.pose.position.z = tmp_pose2d.theta * costmap_ros_->getCircumscribedRadius();
+        // Don't give marker's z position for demo (makes the band look broken)
+	//marker.pose.position.z = tmp_pose2d.theta * costmap_ros_->getCircumscribedRadius();
 	// scale ~ diameter --> is 2x expansion ~ radius
 	marker.scale.x = 2.0*bubble.expansion;
 	marker.scale.y = 2.0*bubble.expansion;
