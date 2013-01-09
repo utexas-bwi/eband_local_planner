@@ -120,7 +120,7 @@ class EBandTrajectoryCtrl{
 		 * @param refernce to the twist cmd
 		 */
 		bool getTwist(geometry_msgs::Twist& twist_cmd);
-
+		bool getTwistDifferentialDrive(geometry_msgs::Twist& twist_cmd);
 
 	private:
 
@@ -131,17 +131,21 @@ class EBandTrajectoryCtrl{
     control_toolbox::Pid pid_;
 
 		// parameters
-                double k_p_, k_nu_, ctrl_freq_;
-		double acc_max_, virt_mass_;
-		double max_vel_lin_, max_vel_th_, min_vel_lin_, min_vel_th_;
-		double min_in_place_vel_th_;
-		double in_place_trans_vel_;
-		double tolerance_trans_, tolerance_rot_, tolerance_timeout_;
-		double acc_max_trans_, acc_max_rot_;
-                double rotation_correction_threshold_; // We'll do rotation correction if we're at least this far from the goal
+    bool differential_drive_hack_;
+    double k_p_, k_nu_, k_int_, k_diff_, ctrl_freq_;
+    double acc_max_, virt_mass_;
+    double max_vel_lin_, max_vel_th_, min_vel_lin_, min_vel_th_;
+    double min_in_place_vel_th_;
+    double in_place_trans_vel_;
+    double tolerance_trans_, tolerance_rot_, tolerance_timeout_;
+    double acc_max_trans_, acc_max_rot_;
+    double rotation_correction_threshold_; // We'll do rotation correction if we're at least this far from the goal
 
-		// flags
-                bool initialized_, band_set_, visualization_;
+    // diff drive only parameters
+    double bubble_velocity_multiplier_;
+
+    // flags
+    bool initialized_, band_set_, visualization_;
 
 		// data
 		std::vector<Bubble> elastic_band_;
@@ -163,6 +167,7 @@ class EBandTrajectoryCtrl{
 		 * @return vector from frame1 to frame2 in coordinates of the reference frame 
 		 */
 		geometry_msgs::Twist getFrame1ToFrame2InRefFrame(const geometry_msgs::Pose& frame1, const geometry_msgs::Pose& frame2, const geometry_msgs::Pose& ref_frame);
+		geometry_msgs::Twist getFrame1ToFrame2InRefFrameNew(const geometry_msgs::Pose& frame1, const geometry_msgs::Pose& frame2, const geometry_msgs::Pose& ref_frame);
 		
 		/**
 		 * @param Transforms twist into a given reference frame

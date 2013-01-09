@@ -103,7 +103,7 @@ void EBandVisualization::publishBand(std::string marker_name_space, std::vector<
 		bubbleToMarker(band[i], eband_msg.markers[i], marker_name_space, i, green);
 
 		// convert bubbles in eband to marker msg
-		bubbleHeadingToMarker(band[i], eband_heading_msg.markers[i], marker_heading_name_space, i, green);
+		//bubbleHeadingToMarker(band[i], eband_heading_msg.markers[i], marker_heading_name_space, i, green);
 	}
 
 	// publish
@@ -220,7 +220,7 @@ void EBandVisualization::bubbleToMarker(Bubble bubble, visualization_msgs::Marke
 	marker.pose = bubble.center.pose;
 	// get theta-angle to display as elevation
 	PoseToPose2D(bubble.center.pose, tmp_pose2d);
-	marker.pose.position.z = tmp_pose2d.theta * costmap_ros_->getCircumscribedRadius();
+	marker.pose.position.z = 0;//tmp_pose2d.theta * costmap_ros_->getCircumscribedRadius();
 	// scale ~ diameter --> is 2x expansion ~ radius
 	marker.scale.x = 2.0*bubble.expansion;
 	marker.scale.y = 2.0*bubble.expansion;
