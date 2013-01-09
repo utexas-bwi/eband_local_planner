@@ -1,9 +1,9 @@
 <launch>
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-    <rosparam file="$(find segbot_navigation)/config/costmap/costmap_common_params.yaml" command="load" ns="global_costmap" />
-    <rosparam file="$(find segbot_navigation)/config/costmap/costmap_common_params.yaml" command="load" ns="local_costmap" />
-    <rosparam file="$(find segbot_navigation)/config/costmap/local_costmap_params.yaml" command="load" />
-    <rosparam file="$(find segbot_navigation)/config/costmap/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find segbot_navigation)/config/eband/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find segbot_navigation)/config/eband/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find segbot_navigation)/config/eband/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find segbot_navigation)/config/eband/global_costmap_params.yaml" command="load" />
 
     <rosparam file="$(find segbot_navigation)/config/eband/eband_planner_params.yaml" command="load"/>
     <param name="base_local_planner" value="eband_local_planner/EBandPlannerROS" />
