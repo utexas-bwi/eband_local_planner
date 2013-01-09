@@ -120,6 +120,9 @@ void EBandPlannerROS::initialize(std::string name, tf::TransformListener* tf, co
 		// set initialized flag
 		initialized_ = true;
 
+    // HACK for band snapping
+    band_snapped_hack_ = false;
+    band_snapped_hack_count_ = 0;
 
 		// this is only here to make this process visible in the rxlogger right from the start
 		ROS_DEBUG("Elastic Band plugin initialized.");
@@ -168,9 +171,28 @@ bool EBandPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& ori
 	// set plan - as this is fresh from the global planner robot pose should be identical to start frame
 	if(!eband_->setPlan(transformed_plan_))
 	{
-		ROS_ERROR("Setting plan to Elastic Band method failed!");
-		return false;
-	}
+    if (band_snapped_hack_) {
+      // OK - this is BAD. global planner's costmap might not have caught up
+      band_snapped_hack_count_++;
+      if (band_snapped_hack_count_ > 10) {
+        // need to give up
+        ROS_ERROR("Global replanning failed despite numerous attempts!!! Giving up.");
+        // reset vars
+        band_snapped_hack_ = false;
+        band_snapped_hack_count_ = 0;
+        return false;
+      }
+      ROS_INFO("Band Hack count #%i", band_snapped_hack_count_);
+      return true;
+
+    } else {
+      ROS_ERROR("Setting plan to Elastic Band method failed!");
+      return false;
+    }
+	} else {
+    band_snapped_hack_ = false;
+    band_snapped_hack_count_ = 0;
+  }
 	ROS_INFO("Global plan set to elastic band for optimization");
 
 	// plan transformed and set to elastic band successfully - set counters to global variable
@@ -198,6 +220,9 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 		ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
 		return false;
 	}
+  if (band_snapped_hack_count_ > 0) { // waiting for global costmap to get a good plan
+    return false;
+  }
 
 	// instantiate local variables
 	//std::vector<geometry_msgs::PoseStamped> local_plan;
@@ -284,19 +309,20 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 	else
 		ROS_DEBUG("Nothing to add");
 
-
 	// update Elastic Band (react on obstacle from costmap, ...)
 	ROS_DEBUG("Calling optimization method for elastic band");
 	std::vector<eband_local_planner::Bubble> current_band;
 	if(!eband_->optimizeBand())
 	{
 		ROS_DEBUG("Optimization failed - Band invalid - No controls availlable");
+    band_snapped_hack_ = true;
 		// display current band
 		if(eband_->getBand(current_band))
 			eband_visual_->publishBand("bubbles", current_band);
 		return false;
-	}
-
+	} else {
+    band_snapped_hack_ = false;
+  }
 
 	// get current Elastic Band and
 	eband_->getBand(current_band);
