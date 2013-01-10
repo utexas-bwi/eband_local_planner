@@ -1,12 +1,19 @@
 EBandPlannerROS:
-  
-  #Set the velocity limits of the robot
+
+  # TRAJECTORY CONTROL
   differential_drive: true
+
+  # velocity limits
   max_vel_lin: 1.0
   max_vel_th: 0.75
   min_vel_lin: 0.25
   min_in_place_vel_th: 0.3
 
-  #tolerances
+  # goal tolerance
   tolerance_trans: 0.2
   tolerance_rot: 0.1
+
+  # angular velocity PID
+  k_prop: 1.0
+
+  #eband parameters
