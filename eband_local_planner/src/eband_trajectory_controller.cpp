@@ -103,7 +103,7 @@ void EBandTrajectoryCtrl::initialize(std::string name, costmap_2d::Costmap2DROS*
 		node_private.param("k_int", k_int_, 0.005);
 		node_private.param("k_diff", k_diff_, -0.005);
 		node_private.param("bubble_velocity_multiplier", bubble_velocity_multiplier_, 2.0);
-		node_private.param("rotation_threshold_multiplier", rotation_threshold_multiplier_, 0.5);
+		node_private.param("rotation_threshold_multiplier", rotation_threshold_multiplier_, 0.75);
     // Ctrl_rate, k_prop, max_vel_lin, max_vel_th, tolerance_trans, tolerance_rot, min_in_place_vel_th
 
 		// copy adress of costmap and Transform Listener (handed over from move_base)

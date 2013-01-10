@@ -1747,7 +1747,8 @@ bool EBandPlanner::calcBubbleDistance(geometry_msgs::Pose start_center_pose, geo
 
 	// calc distance
 	double angle_to_pseudo_vel = diff_pose2D.theta * costmap_ros_->getCircumscribedRadius();
-	distance = sqrt( (diff_pose2D.x * diff_pose2D.x) + (diff_pose2D.y * diff_pose2D.y) + (angle_to_pseudo_vel * angle_to_pseudo_vel) );
+	//distance = sqrt( (diff_pose2D.x * diff_pose2D.x) + (diff_pose2D.y * diff_pose2D.y) + (angle_to_pseudo_vel * angle_to_pseudo_vel) );
+	distance = sqrt( (diff_pose2D.x * diff_pose2D.x) + (diff_pose2D.y * diff_pose2D.y));
 
 	// TODO take into account kinematic properties of body
 
