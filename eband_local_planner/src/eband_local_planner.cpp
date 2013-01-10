@@ -97,6 +97,8 @@ void EBandPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costma
 		pn.param("eband_equilibrium_relative_overshoot", equilibrium_relative_overshoot_, 0.75);
 		pn.param("eband_significant_force_lower_bound", significant_force_, 0.15);
 
+    // use this parameter if a different weight is supplied to the costmap in dyn reconfigure
+    pn.param("costmap_weight", costmap_weight_, 10.0);
 
 		// clean up band
 		elastic_band_.clear();
@@ -1804,25 +1806,20 @@ bool EBandPlanner::calcObstacleKinematicDistance(geometry_msgs::Pose center_pose
 
 	unsigned int cell_x, cell_y;
 	unsigned char disc_cost;
-	double cont_cost;
+  double weight = costmap_weight_;
 
 	// read distance to nearest obstacle directly from costmap
 	// (does not take into account shape and kinematic properties)
 	// get cell for coordinates of bubble center
-	if(!costmap_.worldToMap(center_pose.position.x, center_pose.position.y, cell_x, cell_y))
-	{
-		// assume we are collision free but set distance to a very small value
-		distance = 0.001;
-		return true;
-	}
+	if(!costmap_.worldToMap(center_pose.position.x, center_pose.position.y, cell_x, cell_y)) {
+    // probably at the edge of the costmap - this value should be recovered soon
+		disc_cost = 1;
+	} else {
+    // get cost for this cell
+    disc_cost = costmap_.getCost(cell_x, cell_y);
+  }
 
-	// get cost for this cell
-	disc_cost = costmap_.getCost(cell_x, cell_y);
-
-
-	// now it gets really dirty
-	// TODO remove this as son as (costmap can output distances) possible --> get distance of center cell directly from costmap
-	// calculate conservatively distance to nearest obstacel from this cost (see costmap_2d in wiki for details)
+	// calculate distance to nearest obstacel from this cost (see costmap_2d in wiki for details)
 
 	// For reference: here comes an excerpt of the cost calculation within the costmap function
 	/*if(distance == 0)
@@ -1836,27 +1833,21 @@ bool EBandPlanner::calcObstacleKinematicDistance(geometry_msgs::Pose center_pose
 		cost = (unsigned char) ((INSCRIBED_INFLATED_OBSTACLE - 1) * factor);
 	}*/
 
-	if(disc_cost >= 253) // 128 = cost_possibly_circumscribed // 253 = cost_inscribed_radius <-- from costmap_2D
-	{
+  if (disc_cost == costmap_2d::LETHAL_OBSTACLE) {
+    // pose is inside an obstacle - very bad
 		distance = 0.0;
-		return true;
-	}
-	else
-	{
-		if(disc_cost <= 1)
-		{
-			// we are in "free space"! Here we wont get any distance measure from costmap.
-			// Upper (conservative) bound for cont_cost is in this case:
-			cont_cost = 1.0 / 253.0;
-		}
-		else
-		{
-			cont_cost = ((double) disc_cost)/253.0;
-		}
-
-		distance = -(log(cont_cost)/10.0); // 10.0 is the "scaling_factor" or "wheight" - see above its default is 10.0
-		// done with the really dirty part
-	}
+	}	else if (disc_cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+    // footprint is definitely inside an obstacle - still bad
+    distance = 0.0;
+  } else {
+    if (disc_cost == 0) { // freespace, no estimate of distance
+      disc_cost = 1; // lowest non freespace cost
+    } else if (disc_cost == 255) { // unknown space, we should never be here
+      disc_cost = 1;
+    }
+    double factor = ((double) disc_cost) / (costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 1);
+    distance = -log(factor) / weight;
+  }
 
 	return true;
 }

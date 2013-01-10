@@ -164,6 +164,7 @@ class EBandPlanner{
 		int max_recursion_depth_approx_equi_; ///@brief maximum depth for recursive approximation to constrain computational burden
 		double equilibrium_relative_overshoot_; ///@brief percentage of old force for which a new force is considered significant when higher as this value
 		double significant_force_; ///@brief lower bound for absolute value of force below which it is treated as insignificant (no recursive approximation)
+    double costmap_weight_; // the costmap weight or scaling factor
 
 		// pointer to locally created objects (delete - except for smart-ptrs:)
 		base_local_planner::CostmapModel* world_model_; // local world model
