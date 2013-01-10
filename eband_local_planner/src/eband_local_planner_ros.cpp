@@ -250,7 +250,6 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 		return false;
 	}
 
-
 	// get additional path-frames which are now in moving window
 	ROS_DEBUG("Checking for new path frames in moving window");
 	std::vector<int> plan_start_end_counter = plan_start_end_counter_;

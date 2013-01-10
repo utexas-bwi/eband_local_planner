@@ -143,6 +143,7 @@ class EBandTrajectoryCtrl{
 
     // diff drive only parameters
     double bubble_velocity_multiplier_;
+    double rotation_threshold_multiplier_;
 
     // flags
     bool initialized_, band_set_, visualization_;

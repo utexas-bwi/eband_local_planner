@@ -102,7 +102,8 @@ void EBandTrajectoryCtrl::initialize(std::string name, costmap_2d::Costmap2DROS*
     node_private.param("differential_drive", differential_drive_hack_, true);
 		node_private.param("k_int", k_int_, 0.005);
 		node_private.param("k_diff", k_diff_, -0.005);
-		node_private.param("bubble_velocity_multiplier_", bubble_velocity_multiplier_, 2.0);
+		node_private.param("bubble_velocity_multiplier", bubble_velocity_multiplier_, 2.0);
+		node_private.param("rotation_threshold_multiplier", rotation_threshold_multiplier_, 0.5);
     // Ctrl_rate, k_prop, max_vel_lin, max_vel_th, tolerance_trans, tolerance_rot, min_in_place_vel_th
 
 		// copy adress of costmap and Transform Listener (handed over from move_base)
@@ -246,6 +247,7 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
         bubble_diff.linear.y * bubble_diff.linear.y);
     double radius_of_next_bubble = 0.7 * elastic_band_.at(1).expansion;
     double in_place_rotation_threshold = 
+        rotation_threshold_multiplier_ * 
         fabs(atan2(radius_of_next_bubble,distance_to_next_bubble));
     ROS_DEBUG("In-place rotation threshold: %f(%f,%f)", 
         in_place_rotation_threshold, radius_of_next_bubble, distance_to_next_bubble);
@@ -274,17 +276,25 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
     double bubble_radius = 0.7 * elastic_band_.at(0).expansion;
     double velocity_multiplier = bubble_velocity_multiplier_ * bubble_radius;
     double linear_velocity = velocity_multiplier * max_vel_lin_;
+    linear_velocity *= cos(bubble_diff.angular.z); //decrease while turning 
     if (fabs(linear_velocity) > max_vel_lin_) {
       linear_velocity = forward_sign * max_vel_lin_;
+    } else if (fabs(linear_velocity) < min_vel_lin_) {
+      linear_velocity = forward_sign * min_vel_lin_;
     }
 
     // Select an angular velocity (based on PID controller)
     double error = bubble_diff.angular.z;
+    double rotation_sign = -2 * (bubble_diff.angular.z < 0) + 1;
     double angular_velocity = k_p_ * error;
+    if (fabs(linear_velocity) > max_vel_th_) {
+      angular_velocity = rotation_sign * max_vel_th_;
+    } else if (fabs(linear_velocity) < min_vel_th_) {
+      angular_velocity = rotation_sign * min_vel_th_;
+    }
 
-    ROS_DEBUG("Selected velocity: lin: %f (%fx%f), ang: %f", 
-        linear_velocity, velocity_multiplier, bubble_radius,
-        angular_velocity);
+    ROS_DEBUG("Selected velocity: lin: %f, ang: %f", 
+        linear_velocity, angular_velocity);
 
     robot_cmd.linear.x = linear_velocity;
     robot_cmd.angular.z = angular_velocity;
