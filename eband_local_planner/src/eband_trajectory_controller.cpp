@@ -209,8 +209,9 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
   // We need to check if we are within the threshold of the final destination
   if (!command_provided) {
     int curr_target_bubble = 1;
-    while(fabs(bubble_diff.linear.x) <= tolerance_trans_ &&
-        fabs(bubble_diff.linear.y) <= tolerance_trans_) {
+    // using 0.75 here as you might go out of tolerance during rotation step
+    while(fabs(bubble_diff.linear.x) <= 0.75 * tolerance_trans_ &&
+        fabs(bubble_diff.linear.y) <= 0.75 * tolerance_trans_) {
       if(curr_target_bubble < ((int) elastic_band_.size()) - 1) {
         curr_target_bubble++;
         bubble_diff = 
@@ -219,14 +220,27 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
                 elastic_band_.at(curr_target_bubble).center.pose,
                 elastic_band_.at(0).center.pose);
       } else {
-        // TODO: Do in place rotation here
-        ROS_DEBUG_THROTTLE_NAMED (1.0, "controller_state",
-            "Goal reached with distance %.2f, %.2f"
-            "; sending zero velocity",
-            bubble_diff.linear.x, bubble_diff.linear.y);
-        // goal position reached
-        robot_cmd.linear.x = 0.0;
-        robot_cmd.angular.z = 0.0;
+        // Calculate orientation difference to goal orientation (not captured in bubble_diff)
+        double robot_yaw = tf::getYaw(elastic_band_.at(0).center.pose.orientation);
+        double goal_yaw = tf::getYaw(elastic_band_.at((int)elastic_band_.size() - 1).center.pose.orientation);
+        float orientation_diff = angles::normalize_angle(goal_yaw - robot_yaw);
+        if (fabs(orientation_diff) > tolerance_rot_) {
+          ROS_DEBUG("Performing in place rotation (diff): %f", orientation_diff);
+          double rotation_sign = -2 * (orientation_diff < 0) + 1;
+          robot_cmd.angular.z = 
+            rotation_sign * min_in_place_vel_th_ + k_p_ * orientation_diff;
+          if (fabs(robot_cmd.angular.z) > max_vel_th_) { // limit max rotation
+            robot_cmd.angular.z = rotation_sign * max_vel_th_;
+          }
+        } else {
+          ROS_INFO_THROTTLE_NAMED (1.0, "controller_state",
+              "Goal reached with distance %.2f, %.2f (od = %.2f)"
+              "; sending zero velocity",
+              bubble_diff.linear.x, bubble_diff.linear.y, orientation_diff);
+          // goal position reached
+          robot_cmd.linear.x = 0.0;
+          robot_cmd.angular.z = 0.0;
+        }
         command_provided = true;
         break;
       }
@@ -253,9 +267,8 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
         in_place_rotation_threshold, radius_of_next_bubble, distance_to_next_bubble);
 
     // check if we are above this threshold, if so then perform in-place rotation
-    // TODO(might require hysteresis to prevent jitter)
     if (fabs(bubble_diff.angular.z) > in_place_rotation_threshold) {
-      ROS_DEBUG("Performing in place rotation threshold: %f", bubble_diff.angular.z);
+      ROS_DEBUG("Performing in place rotation (diff): %f", bubble_diff.angular.z);
       double rotation_sign = -2 * (bubble_diff.angular.z < 0) + 1;
       robot_cmd.angular.z = 
         rotation_sign * min_in_place_vel_th_ + k_p_ * bubble_diff.angular.z;
