@@ -81,8 +81,8 @@ void EBandTrajectoryCtrl::initialize(std::string name, costmap_2d::Costmap2DROS*
 		node_private.param("min_in_place_vel_th", min_in_place_vel_th_, 0.0);
 		node_private.param("in_place_trans_vel", in_place_trans_vel_, 0.0);
 
-		node_private.param("tolerance_trans", tolerance_trans_, 0.02);
-		node_private.param("tolerance_rot", tolerance_rot_, 0.04);
+		node_private.param("xy_goal_tolerance", tolerance_trans_, 0.02);
+		node_private.param("yaw_goal_tolerance", tolerance_rot_, 0.04);
 		node_private.param("tolerance_timeout", tolerance_timeout_, 0.5);
 
 		node_private.param("k_prop", k_p_, 4.0);

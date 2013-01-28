@@ -364,7 +364,6 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 	if(eband_->getBand(current_band))
 		eband_visual_->publishBand("bubbles", current_band);
 	
-
 	return true;
 }
 
@@ -392,8 +391,11 @@ bool EBandPlannerROS::isGoalReached()
   costmap_ros_->getRobotPose(global_pose);
 
 	// analogous to dwa_planner the actual check uses the routine implemented in trajectory_planner (trajectory rollout) 
-	return base_local_planner::isGoalReached(*tf_, global_plan_, costmap, costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
+  bool is_goal_reached = base_local_planner::isGoalReached(*tf_, global_plan_, costmap, costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
 				rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_, yaw_goal_tolerance_);
+
+  return is_goal_reached; 
+				
 }
 
 

@@ -10,8 +10,8 @@ EBandPlannerROS:
   min_in_place_vel_th: 0.3
 
   # goal tolerance
-  tolerance_trans: 0.2
-  tolerance_rot: 0.1
+  xy_goal_tolerance: 0.2
+  yaw_goal_tolerance: 3.15
 
   # angular velocity PID
   k_prop: 1.0
