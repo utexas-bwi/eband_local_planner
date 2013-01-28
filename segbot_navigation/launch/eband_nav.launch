@@ -1,0 +1,12 @@
+<!--
+    Launch e-band autonomous navigation nodes for BWI project.
+-->
+<launch>
+
+  <include file="$(find segbot_navigation)/launch/amcl.launch" />
+  <include file="$(find segbot_navigation)/launch/move_base_eband.launch" />
+  <include file="$(find segbot_navigation)/launch/rviz.launch" >
+    <arg name="config" value="nav_eband" />
+  </include>
+
+</launch>
