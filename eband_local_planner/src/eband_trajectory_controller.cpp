@@ -300,9 +300,9 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
     double error = bubble_diff.angular.z;
     double rotation_sign = -2 * (bubble_diff.angular.z < 0) + 1;
     double angular_velocity = k_p_ * error;
-    if (fabs(linear_velocity) > max_vel_th_) {
+    if (fabs(angular_velocity) > max_vel_th_) {
       angular_velocity = rotation_sign * max_vel_th_;
-    } else if (fabs(linear_velocity) < min_vel_th_) {
+    } else if (fabs(angular_velocity) < min_vel_th_) {
       angular_velocity = rotation_sign * min_vel_th_;
     }
 
