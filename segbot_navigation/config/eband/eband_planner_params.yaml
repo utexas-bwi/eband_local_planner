@@ -14,6 +14,6 @@ EBandPlannerROS:
   yaw_goal_tolerance: 0.2
 
   # angular velocity PID
-  k_prop: 1.0
+  k_prop: 0.5
 
   #eband parameters

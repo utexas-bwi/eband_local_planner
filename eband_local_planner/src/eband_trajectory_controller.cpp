@@ -268,10 +268,12 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
 
     // check if we are above this threshold, if so then perform in-place rotation
     if (fabs(bubble_diff.angular.z) > in_place_rotation_threshold) {
-      ROS_DEBUG("Performing in place rotation (diff): %f", bubble_diff.angular.z);
-      double rotation_sign = -2 * (bubble_diff.angular.z < 0) + 1;
-      robot_cmd.angular.z = 
-        rotation_sign * min_in_place_vel_th_ + k_p_ * bubble_diff.angular.z;
+      ROS_INFO("Performing in place rotation (diff): %f", bubble_diff.angular.z);
+      robot_cmd.angular.z = k_p_ * bubble_diff.angular.z;
+      double rotation_sign = (bubble_diff.angular.z < 0) ? -1.0 : +1.0;
+      if (fabs(robot_cmd.angular.z) < min_in_place_vel_th_) {
+        robot_cmd.angular.z = rotation_sign * min_in_place_vel_th_;
+      }
       if (fabs(robot_cmd.angular.z) > max_vel_th_) { // limit max rotation
         robot_cmd.angular.z = rotation_sign * max_vel_th_;
       }
