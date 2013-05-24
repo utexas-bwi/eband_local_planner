@@ -1,7 +1,0 @@
-<launch>
-  <arg name="config" default="nav" />
-  <arg name="config_file" default="$(find segbot_navigation)/rviz/$(arg config).rviz" />
-  <node name="rviz" pkg="rviz" type="rviz" 
-        args="-d $(arg config_file)" 
-        launch-prefix="$(optenv OPTIRUN_LAUNCH_PREFIX)" />
-</launch>
