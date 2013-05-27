@@ -6,11 +6,13 @@ find_package(catkin REQUIRED
   COMPONENTS
     base_local_planner
     costmap_2d
+    geometry_msgs
     nav_core
     nav_msgs
     pluginlib
     roscpp
     tf
+    tf_conversions
 )
 
 find_package(Eigen REQUIRED)
@@ -18,6 +20,21 @@ include_directories(
   include
   ${Eigen_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+)
+
+catkin_package(
+  CATKIN_DEPENDS
+    base_local_planner
+    costmap_2d
+    geometry_msgs
+    nav_core
+    nav_msgs
+    pluginlib
+    roscpp
+    tf
+    tf_conversions
+  INCLUDE_DIRS include
+  LIBRARIES eband_local_planner
 )
 
 # build the library
@@ -29,19 +46,7 @@ add_library(eband_local_planner
   src/eband_trajectory_controller.cpp
 )
 
-catkin_package(
-  CATKIN_DEPENDS
-    base_local_planner
-    costmap_2d
-    nav_core
-    nav_msgs
-    pluginlib
-    roscpp
-    tf
-  INCLUDE_DIRS include
-  LIBRARIES eband_local_planner
-)
-
+target_link_libraries(eband_local_planner ${catkin_LIBRARIES})
 install(
   TARGETS eband_local_planner
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
