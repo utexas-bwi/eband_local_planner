@@ -66,11 +66,11 @@ void EBandPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costma
 		// copy adress of costmap (handed over from move_base via eband wrapper)
 		costmap_ros_ = costmap_ros;
 
-		// create a local copy of the costmap
-		costmap_ros_->getCostmapCopy(costmap_);
+		// get a pointer to the underlying costmap
+		costmap_ = costmap_ros_->getCostmap();
 
 		// create world model from costmap
-		world_model_ = new base_local_planner::CostmapModel(costmap_);
+		world_model_ = new base_local_planner::CostmapModel(*costmap_);
 
 		// get footprint of the robot
 		footprint_spec_ = costmap_ros_->getRobotFootprint();
@@ -142,9 +142,6 @@ bool EBandPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& global
 	// copy plan to local member variable
 	global_plan_ = global_plan;
 
-
-	// also get an up to date copy of the global costmap (needed for collision checks during band creation and optimization)
-	costmap_ros_->getCostmapCopy(costmap_);
 
 	// check whether plan and costmap are in the same frame
 	if(global_plan.front().header.frame_id != costmap_ros_->getGlobalFrameID())
@@ -250,10 +247,6 @@ bool EBandPlanner::addFrames(const std::vector<geometry_msgs::PoseStamped>& plan
 		ROS_WARN("Attempt to connect empty path to band. Nothing to do here.");
 		return false;
 	}
-
-
-	// also get an up to date copy of the global costmap (needed for collision checks during band creation and optimization)
-	costmap_ros_->getCostmapCopy(costmap_);
 
 	// check whether plan and costmap are in the same frame
 	if(plan_to_add.at(0).header.frame_id != costmap_ros_->getGlobalFrameID())
@@ -412,9 +405,6 @@ bool EBandPlanner::optimizeBand(std::vector<Bubble>& band)
 		ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
 		return false;
 	}
-
-	// again get an up to date copy of the global costmap (needed for collision checks during band creation and optimization)
-	costmap_ros_->getCostmapCopy(costmap_);
 
 	// check whether band and costmap are in the same frame
 	if(band.front().center.header.frame_id != costmap_ros_->getGlobalFrameID())
@@ -1019,7 +1009,7 @@ bool EBandPlanner::applyForces(int bubble_num, std::vector<Bubble>& band, std::v
 	bubble_jump.linear.z = 0.0;
 	bubble_jump.angular.x = 0.0;
 	bubble_jump.angular.y = 0.0;
-	bubble_jump.angular.z = band.at(bubble_num).expansion/costmap_ros_->getCircumscribedRadius() * forces.at(bubble_num).wrench.torque.z;
+	bubble_jump.angular.z = band.at(bubble_num).expansion/getCircumscribedRadius(*costmap_ros_) * forces.at(bubble_num).wrench.torque.z;
 	bubble_jump.angular.z = angles::normalize_angle(bubble_jump.angular.z);
 
 	// apply changes to calc tmp bubble position
@@ -1546,7 +1536,7 @@ bool EBandPlanner::calcExternalForces(int bubble_num, Bubble curr_bubble, geomet
 
 	// calculate delta-poses (on upper edge of bubble) for x-direction
 	PoseToPose2D(curr_bubble.center.pose, edge_pose2D);
-	edge_pose2D.theta = edge_pose2D.theta + (curr_bubble.expansion/costmap_ros_->getCircumscribedRadius());
+	edge_pose2D.theta = edge_pose2D.theta + (curr_bubble.expansion/getCircumscribedRadius(*costmap_ros_));
 	edge_pose2D.theta = angles::normalize_angle(edge_pose2D.theta);
 	PoseToPose2D(edge, edge_pose2D);
 	// get expansion on bubble at this point
@@ -1557,7 +1547,7 @@ bool EBandPlanner::calcExternalForces(int bubble_num, Bubble curr_bubble, geomet
 		return true;
 	}
 	// calculate delta-poses (on lower edge of bubble) for x-direction
-	edge_pose2D.theta = edge_pose2D.theta - 2.0*(curr_bubble.expansion/costmap_ros_->getCircumscribedRadius());
+	edge_pose2D.theta = edge_pose2D.theta - 2.0*(curr_bubble.expansion/getCircumscribedRadius(*costmap_ros_));
 	edge_pose2D.theta = angles::normalize_angle(edge_pose2D.theta);
 	PoseToPose2D(edge, edge_pose2D);
 	// get expansion on bubble at this point
@@ -1746,7 +1736,7 @@ bool EBandPlanner::calcBubbleDistance(geometry_msgs::Pose start_center_pose, geo
 	diff_pose2D.y = end_pose2D.y - start_pose2D.y;
 
 	// calc distance
-	double angle_to_pseudo_vel = diff_pose2D.theta * costmap_ros_->getCircumscribedRadius();
+	double angle_to_pseudo_vel = diff_pose2D.theta * getCircumscribedRadius(*costmap_ros_);
 	//distance = sqrt( (diff_pose2D.x * diff_pose2D.x) + (diff_pose2D.y * diff_pose2D.y) + (angle_to_pseudo_vel * angle_to_pseudo_vel) );
 	distance = sqrt( (diff_pose2D.x * diff_pose2D.x) + (diff_pose2D.y * diff_pose2D.y));
 
@@ -1786,7 +1776,7 @@ bool EBandPlanner::calcBubbleDifference(geometry_msgs::Pose start_center_pose, g
 	// multiply by inscribed radius to math calculation of distance
 	difference.angular.x = 0.0;
 	difference.angular.y = 0.0;
-	difference.angular.z = diff_pose2D.theta*costmap_ros_->getCircumscribedRadius();
+	difference.angular.z = diff_pose2D.theta*getCircumscribedRadius(*costmap_ros_);
 
 	// TODO take into account kinematic properties of body
 
@@ -1812,12 +1802,12 @@ bool EBandPlanner::calcObstacleKinematicDistance(geometry_msgs::Pose center_pose
 	// read distance to nearest obstacle directly from costmap
 	// (does not take into account shape and kinematic properties)
 	// get cell for coordinates of bubble center
-	if(!costmap_.worldToMap(center_pose.position.x, center_pose.position.y, cell_x, cell_y)) {
+	if(!costmap_->worldToMap(center_pose.position.x, center_pose.position.y, cell_x, cell_y)) {
     // probably at the edge of the costmap - this value should be recovered soon
 		disc_cost = 1;
 	} else {
     // get cost for this cell
-    disc_cost = costmap_.getCost(cell_x, cell_y);
+    disc_cost = costmap_->getCost(cell_x, cell_y);
   }
 
 	// calculate distance to nearest obstacel from this cost (see costmap_2d in wiki for details)

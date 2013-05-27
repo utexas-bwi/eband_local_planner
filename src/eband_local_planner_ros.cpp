@@ -385,14 +385,16 @@ bool EBandPlannerROS::isGoalReached()
 		base_odom = base_odom_;
 	}
 
-  costmap_2d::Costmap2D costmap;
-  costmap_ros_->getCostmapCopy(costmap);
   tf::Stamped<tf::Pose> global_pose;
   costmap_ros_->getRobotPose(global_pose);
 
 	// analogous to dwa_planner the actual check uses the routine implemented in trajectory_planner (trajectory rollout) 
-  bool is_goal_reached = base_local_planner::isGoalReached(*tf_, global_plan_, costmap, costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
-				rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_, yaw_goal_tolerance_);
+  bool is_goal_reached = base_local_planner::isGoalReached(
+      *tf_, global_plan_, *(costmap_ros_->getCostmap()), 
+      costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
+			rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_, 
+      yaw_goal_tolerance_
+  );
 
   return is_goal_reached; 
 				

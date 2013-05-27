@@ -69,7 +69,6 @@ struct Bubble
 
 enum AddAtPosition {add_front, add_back};
 
-
 // functions
 
 /**
@@ -100,6 +99,13 @@ void Pose2DToPose(geometry_msgs::Pose& pose, const geometry_msgs::Pose2D pose2D)
 bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
 							const costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
 							std::vector<geometry_msgs::PoseStamped>& transformed_plan, std::vector<int>& start_end_counts_from_end);
+
+/**
+ * @brief Gets the footprint of the robot and computes the circumscribed radius for the eband approach
+ * @param costmap A reference to the costmap from which the radius is computed
+ * @return radius in meters
+ */
+double getCircumscribedRadius(costmap_2d::Costmap2DROS& costmap);
 
 };
 #endif

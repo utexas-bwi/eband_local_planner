@@ -1,38 +1,53 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+# http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
+cmake_minimum_required(VERSION 2.8.3)
+project(eband_local_planner)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-
-rosbuild_find_ros_package(actionlib_msgs)
-include(${actionlib_msgs_PACKAGE_PATH}/cmake/actionbuild.cmake)
-genaction()
-
-rosbuild_init()
+find_package(catkin REQUIRED 
+  COMPONENTS
+    base_local_planner
+    costmap_2d
+    nav_core
+    nav_msgs
+    pluginlib
+    roscpp
+    tf
+)
 
 find_package(Eigen REQUIRED)
-include_directories(${Eigen_INCLUDE_DIRS})
-
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-rosbuild_genmsg()
-
-# we are using the boost::bind library
-rosbuild_add_boost_directories()
+include_directories(
+  include
+  ${Eigen_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
+)
 
 # build the library
-rosbuild_add_library(eband_local_planner src/eband_local_planner_ros.cpp src/eband_local_planner.cpp src/conversions_and_types.cpp src/eband_visualization.cpp src/eband_trajectory_controller.cpp)
-target_link_libraries(eband_local_planner tinyxml)
+add_library(eband_local_planner 
+  src/eband_local_planner_ros.cpp 
+  src/eband_local_planner.cpp 
+  src/conversions_and_types.cpp 
+  src/eband_visualization.cpp 
+  src/eband_trajectory_controller.cpp
+)
 
-rosbuild_download_data(https://code.ros.org/svn/data/trunk/willow_maps/willow-full-0.025.pgm launch/stage_launch/willow-full-0.025.pgm e66b17ee374f2d7657972efcb3e2e4f7)
+catkin_package(
+  CATKIN_DEPENDS
+    base_local_planner
+    costmap_2d
+    nav_core
+    nav_msgs
+    pluginlib
+    roscpp
+    tf
+  INCLUDE_DIRS include
+  LIBRARIES eband_local_planner
+)
 
-rosbuild_add_executable(eband_action src/eband_action.cpp)
-target_link_libraries(eband_action eband_local_planner)
+install(
+  TARGETS eband_local_planner
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
+install(
+  FILES elp_plugin.xml
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)

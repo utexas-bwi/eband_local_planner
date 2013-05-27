@@ -220,7 +220,7 @@ void EBandVisualization::bubbleToMarker(Bubble bubble, visualization_msgs::Marke
 	marker.pose = bubble.center.pose;
 	// get theta-angle to display as elevation
 	PoseToPose2D(bubble.center.pose, tmp_pose2d);
-	marker.pose.position.z = 0;//tmp_pose2d.theta * costmap_ros_->getCircumscribedRadius();
+	marker.pose.position.z = 0;//tmp_pose2d.theta * getCircumscribedRadius(*costmap_ros_);
 	// scale ~ diameter --> is 2x expansion ~ radius
 	marker.scale.x = 2.0*bubble.expansion;
 	marker.scale.y = 2.0*bubble.expansion;
@@ -262,7 +262,7 @@ void EBandVisualization::bubbleHeadingToMarker(Bubble bubble, visualization_msgs
 	marker.pose = bubble.center.pose;
 	// get theta-angle to display as elevation
 	PoseToPose2D(bubble.center.pose, tmp_pose2d);
-	marker.pose.position.z = tmp_pose2d.theta * costmap_ros_->getCircumscribedRadius();
+	marker.pose.position.z = tmp_pose2d.theta * getCircumscribedRadius(*costmap_ros_);
 	// scale ~ diameter --> is 2x expansion ~ radius
 	marker.scale.x = 0.9;
 	marker.scale.y = 0.45;
@@ -304,7 +304,7 @@ void EBandVisualization::forceToMarker(geometry_msgs::WrenchStamped wrench, geom
 	marker.pose.position = wrench_origin.position;
 	// get theta-angle to display as elevation
 	PoseToPose2D(wrench_origin, tmp_pose2d);
-	marker.pose.position.z = tmp_pose2d.theta * costmap_ros_->getCircumscribedRadius();
+	marker.pose.position.z = tmp_pose2d.theta * getCircumscribedRadius(*costmap_ros_);
 
 	// body - orientation of vector (calc. quaternion that transform xAxis into force-vector)
 	// check if force different from zero
@@ -313,7 +313,7 @@ void EBandVisualization::forceToMarker(geometry_msgs::WrenchStamped wrench, geom
 		// find AxisAngle Representation then convert to Quaternion
 		// (Axis = normalize(vec1) cross normalize(vec2) // cos(Angle) = normalize(vec1) dot normalize(vec2))
 		Eigen::Vector3d x_axis(1.0, 0.0, 0.0);
-		Eigen::Vector3d target_vec( wrench.wrench.force.x, wrench.wrench.force.y, wrench.wrench.torque.z / costmap_ros_->getCircumscribedRadius() );
+		Eigen::Vector3d target_vec( wrench.wrench.force.x, wrench.wrench.force.y, wrench.wrench.torque.z / getCircumscribedRadius(*costmap_ros_) );
 		Eigen::Vector3d rotation_axis(1.0, 0.0, 0.0);
 		double rotation_angle = 0.0;
 		// get Axis orthogonal to both vectors ()
@@ -343,7 +343,7 @@ void EBandVisualization::forceToMarker(geometry_msgs::WrenchStamped wrench, geom
 
 		// scale ~ diameter --> is 2x expansion ~ radius
 		double scale = sqrt( (wrench.wrench.force.x * wrench.wrench.force.x) + (wrench.wrench.force.y * wrench.wrench.force.y) +
-						( (wrench.wrench.torque.z/costmap_ros_->getCircumscribedRadius())*(wrench.wrench.torque.z/costmap_ros_->getCircumscribedRadius()) ) );
+						( (wrench.wrench.torque.z/getCircumscribedRadius(*costmap_ros_))*(wrench.wrench.torque.z/getCircumscribedRadius(*costmap_ros_)) ) );
 		marker.scale.x = scale; //1.0;
 		marker.scale.y = scale; //1.0;
 		marker.scale.z = scale; //1.0;

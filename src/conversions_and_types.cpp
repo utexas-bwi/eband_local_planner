@@ -90,7 +90,7 @@ void Pose2DToPose(geometry_msgs::Pose& pose, const geometry_msgs::Pose2D pose2D)
 
 
 bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
-						const costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
+						costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
 						std::vector<geometry_msgs::PoseStamped>& transformed_plan, std::vector<int>& start_end_counts)
 {
 	const geometry_msgs::PoseStamped& plan_pose = global_plan[0];
@@ -118,7 +118,11 @@ bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geom
 		tf.transformPose(plan_pose.header.frame_id, robot_pose, robot_pose);
 
 		//we'll keep points on the plan that are within the window that we're looking at
-		double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0, costmap.getSizeInCellsY() * costmap.getResolution() / 2.0);
+
+		double dist_threshold = std::max(
+        costmap.getCostmap()->getSizeInMetersX() / 2.0,
+        costmap.getCostmap()->getSizeInMetersY() / 2.0
+    );
 
 		unsigned int i = 0;
 		double sq_dist_threshold = dist_threshold * dist_threshold;
@@ -205,6 +209,19 @@ bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geom
 	}
 
 	return true;
+}
+
+double getCircumscribedRadius(costmap_2d::Costmap2DROS& costmap) {
+  std::vector<geometry_msgs::Point> footprint(costmap.getRobotFootprint());
+  double max_distance_sqr = 0;
+  for (size_t i = 0; i < footprint.size(); ++i) {
+    geometry_msgs::Point& p = footprint[i];
+    double distance_sqr = p.x*p.x + p.y*p.y;
+    if (distance_sqr > max_distance_sqr) {
+      max_distance_sqr = distance_sqr;
+    }
+  }
+  return sqrt(max_distance_sqr);
 }
 
 

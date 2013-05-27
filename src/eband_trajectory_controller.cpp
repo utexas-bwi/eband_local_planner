@@ -55,7 +55,8 @@ EBandTrajectoryCtrl::EBandTrajectoryCtrl(std::string name, costmap_2d::Costmap2D
 	initialize(name, costmap_ros);
 
   // Initialize pid object (note we'll be further clamping its output)
-  pid_.initPid(1, 0, 0, 10, -10);
+  // TODO See #1, #2
+  //pid_.initPid(1, 0, 0, 10, -10);
 }
 
 
@@ -364,7 +365,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	bubble_diff = getFrame1ToFrame2InRefFrame(elastic_band_.at(0).center.pose,
 												elastic_band_.at(1).center.pose,
 													ref_frame_band_);
-	ang_pseudo_dist = bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
+	ang_pseudo_dist = bubble_diff.angular.z * getCircumscribedRadius(*costmap_ros_);
 	bubble_distance = sqrt( (bubble_diff.linear.x * bubble_diff.linear.x) + (bubble_diff.linear.y * bubble_diff.linear.y) +
 						(ang_pseudo_dist * ang_pseudo_dist) );
 
@@ -379,7 +380,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	control_deviation = bubble_diff;
 
 
-	ang_pseudo_dist = control_deviation.angular.z * costmap_ros_->getCircumscribedRadius();
+	ang_pseudo_dist = control_deviation.angular.z * getCircumscribedRadius(*costmap_ros_);
 	abs_ctrl_dev = sqrt( (control_deviation.linear.x * control_deviation.linear.x) +
 								(control_deviation.linear.y * control_deviation.linear.y) +
 									(ang_pseudo_dist * ang_pseudo_dist) );
@@ -409,7 +410,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 			next_bubble_diff = getFrame1ToFrame2InRefFrame(elastic_band_.at(1).center.pose,
 															elastic_band_.at(2).center.pose,
 																ref_frame_band_);
-			ang_pseudo_dist = next_bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
+			ang_pseudo_dist = next_bubble_diff.angular.z * getCircumscribedRadius(*costmap_ros_);
 			next_bubble_distance = sqrt( (next_bubble_diff.linear.x * next_bubble_diff.linear.x) +
 											(next_bubble_diff.linear.y * next_bubble_diff.linear.y) +
 												(ang_pseudo_dist * ang_pseudo_dist) );
@@ -436,8 +437,8 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 				double ang_pseudo_dist1, ang_pseudo_dist2;
 
 				// get distance between next bubble center and intersection point
-				ang_pseudo_dist1 = bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
-				ang_pseudo_dist2 = next_bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
+				ang_pseudo_dist1 = bubble_diff.angular.z * getCircumscribedRadius(*costmap_ros_);
+				ang_pseudo_dist2 = next_bubble_diff.angular.z * getCircumscribedRadius(*costmap_ros_);
 				// careful! - we need this sign because of the direction of the vectors and the definition of the vector-product
 				vec_prod = - ( (bubble_diff.linear.x * next_bubble_diff.linear.x) +
 								(bubble_diff.linear.y * next_bubble_diff.linear.y) +
@@ -472,7 +473,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	}
 
 	// plot control deviation
-	ang_pseudo_dist = control_deviation.angular.z * costmap_ros_->getCircumscribedRadius();
+	ang_pseudo_dist = control_deviation.angular.z * getCircumscribedRadius(*costmap_ros_);
 	abs_ctrl_dev = sqrt( (control_deviation.linear.x * control_deviation.linear.x) +
 								(control_deviation.linear.y * control_deviation.linear.y) +
 									(ang_pseudo_dist * ang_pseudo_dist) );
@@ -507,7 +508,9 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
         {
         
           const double angular_diff = angularDiff(control_deviation, elastic_band_.at(0).center.pose);
-          const double vel = pid_.updatePid(-angular_diff, ros::Duration(1/ctrl_freq_));
+          // TODO See Issue #1, #2
+          //const double vel = pid_.updatePid(-angular_diff, ros::Duration(1/ctrl_freq_));
+          const double vel = 0;
           const double mult = fabs(vel) > max_vel_th_ ? max_vel_th_/fabs(vel) : 1.0;
           control_deviation.angular.z = vel*mult;
           const double abs_vel = fabs(control_deviation.angular.z);
@@ -555,7 +558,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
 	currbub_maxvel_abs = getBubbleTargetVel(curr_bub_num, elastic_band_, currbub_maxvel_dir);
 
 	// if neccessarry scale desired vel to stay lower than currbub_maxvel_abs
-	ang_pseudo_dist = desired_velocity.angular.z * costmap_ros_->getCircumscribedRadius();
+	ang_pseudo_dist = desired_velocity.angular.z * getCircumscribedRadius(*costmap_ros_);
 	desvel_abs = sqrt( (desired_velocity.linear.x * desired_velocity.linear.x) +
 							(desired_velocity.linear.y * desired_velocity.linear.y) +
 								(ang_pseudo_dist * ang_pseudo_dist) );
@@ -700,7 +703,7 @@ double EBandTrajectoryCtrl::getBubbleTargetVel(const int& target_bub_num, const 
 	ROS_ASSERT( (target_bub_num >= 0) && ((target_bub_num +1) < (int) band.size()) );
 	bubble_diff = getFrame1ToFrame2InRefFrame(band.at(target_bub_num).center.pose, band.at(target_bub_num + 1).center.pose,
 												ref_frame_band_);
-	angle_to_pseudo_vel = bubble_diff.angular.z * costmap_ros_->getCircumscribedRadius();
+	angle_to_pseudo_vel = bubble_diff.angular.z * getCircumscribedRadius(*costmap_ros_);
 
 	bubble_distance = sqrt( (bubble_diff.linear.x * bubble_diff.linear.x) + (bubble_diff.linear.y * bubble_diff.linear.y) +
 							(angle_to_pseudo_vel * angle_to_pseudo_vel) );

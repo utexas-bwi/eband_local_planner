@@ -175,7 +175,7 @@ class EBandPlanner{
 
 		// data
 		std::vector<geometry_msgs::Point> footprint_spec_; // specification of robot footprint as vector of corner points
-		costmap_2d::Costmap2D costmap_; // local copy of costmap
+		costmap_2d::Costmap2D* costmap_; // pointer to underlying costmap
 		std::vector<geometry_msgs::PoseStamped> global_plan_; // copy of the plan that shall be optimized
 		std::vector<Bubble> elastic_band_;
 
