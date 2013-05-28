@@ -1864,6 +1864,8 @@ bool EBandPlanner::convertPlanToBand(std::vector<geometry_msgs::PoseStamped> pla
 	// get local copy of referenced variable
 	tmp_band = band;
 
+  bool no_success = false;
+
 	// adapt band to plan
 	tmp_band.resize(plan.size());
 	for(int i = 0; i < ((int) plan.size()); i++)
@@ -1883,18 +1885,23 @@ bool EBandPlanner::convertPlanToBand(std::vector<geometry_msgs::PoseStamped> pla
 			return false;
 		}
 
+    ROS_INFO("At (%f,%f), nearest obstacle distance is: %f", tmp_band[i].center.pose.position.x, tmp_band[i].center.pose.position.y, distance);
+
 		if(distance <= 0.0)
 		{
 			// frame must not be immediately in collision -> otherwise calculation of gradient will later be invalid
 			ROS_INFO("Calculation of Distance between bubble and nearest obstacle failed. Frame %d of %d in collision. Plan invalid", i, ((int) plan.size()) );
 			// TODO if frame in collision try to repair band instaed of aborting averything
-			return false;
+      no_success = true;
 		}
 
 
 		// assign to expansion of bubble
 		tmp_band[i].expansion = distance;
 	}
+
+  if (no_success)
+    return false;
 
 	// write to referenced variable
 	band = tmp_band;
