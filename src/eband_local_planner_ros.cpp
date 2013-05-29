@@ -167,17 +167,6 @@ bool EBandPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& ori
 		return false;
 	}
 
-  // write out costmap to rviz here
-  costmap_2d::Costmap2D* costmap(costmap_ros_->getCostmap());
-  ROS_INFO("Costmap size is %i x %i, %f x %f at resolution %f", 
-      costmap->getSizeInCellsX(), 
-      costmap->getSizeInCellsY(),
-      costmap->getSizeInMetersX(),
-      costmap->getSizeInMetersY(),
-      costmap->getResolution()
-  );
-  ROS_INFO("Costmap origin (%f, %f)", costmap->getOriginX(), costmap->getOriginY());
-
 	// set plan - as this is fresh from the global planner robot pose should be identical to start frame
 	if(!eband_->setPlan(transformed_plan_))
 	{
