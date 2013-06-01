@@ -211,9 +211,34 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
   // We need to check if we are within the threshold of the final destination
   if (!command_provided) {
     int curr_target_bubble = 1;
+
+    while(curr_target_bubble < ((int) elastic_band_.size()) - 1) {
+      curr_target_bubble++;
+      bubble_diff = 
+          getFrame1ToFrame2InRefFrameNew(
+              elastic_band_.at(0).center.pose, 
+              elastic_band_.at(curr_target_bubble).center.pose,
+              elastic_band_.at(0).center.pose);
+    }
+
+    // if you go past tolerance, then try to get closer again
+    if(fabs(bubble_diff.linear.x) > tolerance_trans_ ||
+        fabs(bubble_diff.linear.y) > tolerance_trans_) {
+      in_final_goal_turn_ = false;
+    }
+
+    // Get the differences between the first 2 bubbles in the robot's frame
+    curr_target_bubble = 1;
+    bubble_diff = getFrame1ToFrame2InRefFrameNew(
+        elastic_band_.at(0).center.pose,
+        elastic_band_.at(1).center.pose,
+        elastic_band_.at(0).center.pose);
+
     // using 0.75 here as you might go out of tolerance during rotation step
+    // once you enter rotation, unless you exceed tolerances, continue with rotation
     while(fabs(bubble_diff.linear.x) <= 0.75 * tolerance_trans_ &&
-        fabs(bubble_diff.linear.y) <= 0.75 * tolerance_trans_) {
+        fabs(bubble_diff.linear.y) <= 0.75 * tolerance_trans_ ||
+        in_final_goal_turn_) {
       if(curr_target_bubble < ((int) elastic_band_.size()) - 1) {
         curr_target_bubble++;
         bubble_diff = 
@@ -227,7 +252,8 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
         double goal_yaw = tf::getYaw(elastic_band_.at((int)elastic_band_.size() - 1).center.pose.orientation);
         float orientation_diff = angles::normalize_angle(goal_yaw - robot_yaw);
         if (fabs(orientation_diff) > tolerance_rot_) {
-          ROS_DEBUG("Performing in place rotation (diff): %f", orientation_diff);
+          in_final_goal_turn_ = true;
+          ROS_DEBUG("Performing in place rotation for goal (diff): %f", orientation_diff);
           double rotation_sign = -2 * (orientation_diff < 0) + 1;
           robot_cmd.angular.z = 
             rotation_sign * min_in_place_vel_th_ + k_p_ * orientation_diff;
@@ -235,8 +261,7 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
             robot_cmd.angular.z = rotation_sign * max_vel_th_;
           }
         } else {
-          ROS_INFO_THROTTLE_NAMED (1.0, "controller_state",
-              "Goal reached with distance %.2f, %.2f (od = %.2f)"
+          ROS_INFO ("TrajectoryController: Goal reached with distance %.2f, %.2f (od = %.2f)"
               "; sending zero velocity",
               bubble_diff.linear.x, bubble_diff.linear.y, orientation_diff);
           // goal position reached
@@ -271,7 +296,6 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
 
     // check if we are above this threshold, if so then perform in-place rotation
     if (fabs(bubble_diff.angular.z) > in_place_rotation_threshold) {
-      ROS_DEBUG("Performing in place rotation (diff): %f", bubble_diff.angular.z);
       robot_cmd.angular.z = k_p_ * bubble_diff.angular.z;
       double rotation_sign = (bubble_diff.angular.z < 0) ? -1.0 : +1.0;
       if (fabs(robot_cmd.angular.z) < min_in_place_vel_th_) {
@@ -280,6 +304,7 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
       if (fabs(robot_cmd.angular.z) > max_vel_th_) { // limit max rotation
         robot_cmd.angular.z = rotation_sign * max_vel_th_;
       }
+      ROS_DEBUG("Performing in place rotation for start (diff): %f", bubble_diff.angular.z, robot_cmd.angular.z);
       command_provided = true;
     }
   }
@@ -320,6 +345,7 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
   }
 
   twist_cmd = robot_cmd;
+  ROS_DEBUG("Final command: %f, %f", twist_cmd.linear.x, twist_cmd.angular.z);
   return true;
 }
 
