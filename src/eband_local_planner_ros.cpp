@@ -206,8 +206,10 @@ bool EBandPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& ori
 	if(eband_->getBand(current_band))
 		eband_visual_->publishBand("bubbles", current_band);
 
+  // set goal as not reached
+  goal_reached_ = false;
 
-    return true;
+  return true;
 }
 
 
@@ -340,7 +342,7 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 
 	// get resulting commands from the controller
 	geometry_msgs::Twist cmd_twist;
-	if(!eband_trj_ctrl_->getTwist(cmd_twist))
+	if(!eband_trj_ctrl_->getTwist(cmd_twist, goal_reached_))
 	{
 		ROS_DEBUG("Failed to calculate Twist from band in Trajectory Controller");
 		return false;
@@ -376,26 +378,28 @@ bool EBandPlannerROS::isGoalReached()
 		return false;
 	}
 
-	// copy odometry information to local variable
-	nav_msgs::Odometry base_odom;
-	{
-		// make sure we do not read new date from topic right at the moment
-		boost::mutex::scoped_lock lock(odom_mutex_);
-		base_odom = base_odom_;
-	}
+  return goal_reached_;
 
-  tf::Stamped<tf::Pose> global_pose;
-  costmap_ros_->getRobotPose(global_pose);
+	// // copy odometry information to local variable
+	// nav_msgs::Odometry base_odom;
+	// {
+	// 	// make sure we do not read new date from topic right at the moment
+	// 	boost::mutex::scoped_lock lock(odom_mutex_);
+	// 	base_odom = base_odom_;
+	// }
 
-	// analogous to dwa_planner the actual check uses the routine implemented in trajectory_planner (trajectory rollout) 
-  bool is_goal_reached = base_local_planner::isGoalReached(
-      *tf_, global_plan_, *(costmap_ros_->getCostmap()), 
-      costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
-			rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_, 
-      yaw_goal_tolerance_
-  );
+  // tf::Stamped<tf::Pose> global_pose;
+  // costmap_ros_->getRobotPose(global_pose);
 
-  return is_goal_reached; 
+	// // analogous to dwa_planner the actual check uses the routine implemented in trajectory_planner (trajectory rollout) 
+  // bool is_goal_reached = base_local_planner::isGoalReached(
+  //     *tf_, global_plan_, *(costmap_ros_->getCostmap()), 
+  //     costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
+	// 		rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_, 
+  //     yaw_goal_tolerance_
+  // );
+
+  // return is_goal_reached; 
 				
 }
 

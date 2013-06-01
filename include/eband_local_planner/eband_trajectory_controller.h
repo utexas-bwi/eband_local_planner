@@ -114,8 +114,8 @@ class EBandTrajectoryCtrl{
 		 * @brief calculates a twist feedforward command from the current band
 		 * @param refernce to the twist cmd
 		 */
-		bool getTwist(geometry_msgs::Twist& twist_cmd);
-		bool getTwistDifferentialDrive(geometry_msgs::Twist& twist_cmd);
+		bool getTwist(geometry_msgs::Twist& twist_cmd, bool& goal_reached);
+		bool getTwistDifferentialDrive(geometry_msgs::Twist& twist_cmd, bool& goal_reached);
 
 	private:
 

@@ -180,7 +180,8 @@ double angularDiff (const geometry_msgs::Twist& heading,
     return d-2*pi;
 }
 
-bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_cmd) {
+bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_cmd, bool& goal_reached) {
+  goal_reached = false;
 
   geometry_msgs::Twist robot_cmd, bubble_diff;
 	robot_cmd.linear.x = 0.0;
@@ -241,6 +242,7 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
           // goal position reached
           robot_cmd.linear.x = 0.0;
           robot_cmd.angular.z = 0.0;
+          goal_reached = true;
         }
         command_provided = true;
         break;
@@ -322,10 +324,11 @@ bool EBandTrajectoryCtrl::getTwistDifferentialDrive(geometry_msgs::Twist& twist_
 }
 
 
-bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
+bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd, bool& goal_reached)
 {
+  goal_reached = false;
   if (differential_drive_hack_) {
-    return getTwistDifferentialDrive(twist_cmd);
+    return getTwistDifferentialDrive(twist_cmd, goal_reached);
   }
 
 	// init twist cmd to be handed back to caller
@@ -666,6 +669,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd)
                   last_vel_.linear.x = 0.0;
                   last_vel_.linear.y = 0.0;
                   last_vel_.angular.z = 0.0;
+                  goal_reached = true;
                   break;
 		}
 	}

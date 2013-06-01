@@ -158,6 +158,7 @@ class EBandPlannerROS : public nav_core::BaseLocalPlanner{
     // hack introduced with diff drive plugin (mostly to test a theory)
     int band_snapped_hack_count_;
     bool band_snapped_hack_;
+    bool goal_reached_;
 
 		// flags
 		bool initialized_;
