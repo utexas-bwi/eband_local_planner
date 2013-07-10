@@ -47,11 +47,16 @@ add_library(eband_local_planner
 )
 
 target_link_libraries(eband_local_planner ${catkin_LIBRARIES})
+
+install(
+  DIRECTORY include
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+)
+
 install(
   TARGETS eband_local_planner
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
-
 install(
   FILES elp_plugin.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
