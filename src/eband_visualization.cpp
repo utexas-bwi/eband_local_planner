@@ -103,12 +103,12 @@ void EBandVisualization::publishBand(std::string marker_name_space, std::vector<
 		bubbleToMarker(band[i], eband_msg.markers[i], marker_name_space, i, green);
 
 		// convert bubbles in eband to marker msg
-		//bubbleHeadingToMarker(band[i], eband_heading_msg.markers[i], marker_heading_name_space, i, green);
+		// bubbleHeadingToMarker(band[i], eband_heading_msg.markers[i], marker_heading_name_space, i, green);
 	}
 
 	// publish
 	bubble_pub_.publish(eband_msg);
-	bubble_pub_.publish(eband_heading_msg);
+	//bubble_pub_.publish(eband_heading_msg);
 }
 
 
@@ -237,7 +237,7 @@ void EBandVisualization::bubbleToMarker(Bubble bubble, visualization_msgs::Marke
 		case blue:	{ marker.color.b = 1.0f; break; }
 	}
 	// transparency (alpha value < 1 : displays marker transparent)
-	marker.color.a = 0.25;
+	marker.color.a = 0.75;
 
 	// lifetime of this marker
 	marker.lifetime = ros::Duration(marker_lifetime_);
