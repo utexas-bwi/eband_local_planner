@@ -58,6 +58,9 @@
 #include <angles/angles.h>
 #include <tf/tf.h>
 
+// PID control library
+#include <control_toolbox/pid.h>
+
 namespace eband_local_planner{
 
 /**
@@ -122,6 +125,8 @@ class EBandTrajectoryCtrl{
 		// pointer to external objects (do NOT delete object)
 		costmap_2d::Costmap2DROS* costmap_ros_; ///<@brief pointer to costmap
 		boost::shared_ptr<EBandVisualization> target_visual_; // pointer to visualization object
+
+    control_toolbox::Pid pid_;
 
 		// parameters
     bool differential_drive_hack_;

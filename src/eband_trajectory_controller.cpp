@@ -55,8 +55,7 @@ EBandTrajectoryCtrl::EBandTrajectoryCtrl(std::string name, costmap_2d::Costmap2D
 	initialize(name, costmap_ros);
 
   // Initialize pid object (note we'll be further clamping its output)
-  // TODO See #1, #2
-  //pid_.initPid(1, 0, 0, 10, -10);
+  pid_.initPid(1, 0, 0, 10, -10);
 }
 
 
@@ -537,9 +536,7 @@ bool EBandTrajectoryCtrl::getTwist(geometry_msgs::Twist& twist_cmd, bool& goal_r
         {
         
           const double angular_diff = angularDiff(control_deviation, elastic_band_.at(0).center.pose);
-          // TODO See Issue #1, #2
-          //const double vel = pid_.updatePid(-angular_diff, ros::Duration(1/ctrl_freq_));
-          const double vel = 0;
+          const double vel = pid_.computeCommand(angular_diff, ros::Duration(1/ctrl_freq_));
           const double mult = fabs(vel) > max_vel_th_ ? max_vel_th_/fabs(vel) : 1.0;
           control_deviation.angular.z = vel*mult;
           const double abs_vel = fabs(control_deviation.angular.z);
