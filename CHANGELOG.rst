@@ -2,6 +2,11 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.2 (2013-08-12)
+------------------
+* stopped publishing empty bubble heading message. closes `#6 <https://github.com/utexas-bwi/eband_local_planner/issues/6>`_
+* reenabled holonomic drive control. still untested since groovy/hydro migration. closes `#2 <https://github.com/utexas-bwi/eband_local_planner/issues/2>`_
+
 0.1.0 (2013-07-10)
 ------------------
 * add include directory to installation
