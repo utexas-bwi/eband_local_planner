@@ -303,8 +303,10 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 			ROS_DEBUG("Sucessfully added frames to band");
 			plan_start_end_counter_ = plan_start_end_counter;
 		}
-		else
-			ROS_DEBUG("Failed to add frames to existing band");
+		else {
+			ROS_WARN("Failed to add frames to existing band");
+      return false;
+    }
 	}
 	else
 		ROS_DEBUG("Nothing to add");
@@ -314,7 +316,7 @@ bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
 	std::vector<eband_local_planner::Bubble> current_band;
 	if(!eband_->optimizeBand())
 	{
-		ROS_DEBUG("Optimization failed - Band invalid - No controls availlable");
+		ROS_WARN("Optimization failed - Band invalid - No controls availlable");
     band_snapped_hack_ = true;
 		// display current band
 		if(eband_->getBand(current_band))
