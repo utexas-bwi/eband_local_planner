@@ -227,50 +227,42 @@ namespace eband_local_planner{
       }
 
       // Get the differences between the first 2 bubbles in the robot's frame
-      curr_target_bubble = 1;
+      int goal_bubble = (((int) elastic_band_.size()) - 1);
       bubble_diff = getFrame1ToFrame2InRefFrameNew(
           elastic_band_.at(0).center.pose,
-          elastic_band_.at(1).center.pose,
+          elastic_band_.at(goal_bubble).center.pose,
           elastic_band_.at(0).center.pose);
 
-      // using 0.75 here as you might go out of tolerance during rotation step
-      // once you enter rotation, unless you exceed tolerances, continue with rotation
-      while(fabs(bubble_diff.linear.x) <= 0.75 * tolerance_trans_ &&
-          fabs(bubble_diff.linear.y) <= 0.75 * tolerance_trans_ ||
+      // Get closer to the goal than the tolerance requires before starting the 
+      // final turn. The final turn may cause you to move slightly out of
+      // position
+      if((fabs(bubble_diff.linear.x) <= 0.6 * tolerance_trans_ &&
+          fabs(bubble_diff.linear.y) <= 0.6 * tolerance_trans_) ||
           in_final_goal_turn_) {
-        if(curr_target_bubble < ((int) elastic_band_.size()) - 1) {
-          curr_target_bubble++;
-          bubble_diff = 
-            getFrame1ToFrame2InRefFrameNew(
-                elastic_band_.at(0).center.pose, 
-                elastic_band_.at(curr_target_bubble).center.pose,
-                elastic_band_.at(0).center.pose);
-        } else {
-          // Calculate orientation difference to goal orientation (not captured in bubble_diff)
-          double robot_yaw = tf::getYaw(elastic_band_.at(0).center.pose.orientation);
-          double goal_yaw = tf::getYaw(elastic_band_.at((int)elastic_band_.size() - 1).center.pose.orientation);
-          float orientation_diff = angles::normalize_angle(goal_yaw - robot_yaw);
-          if (fabs(orientation_diff) > tolerance_rot_) {
-            in_final_goal_turn_ = true;
-            ROS_DEBUG("Performing in place rotation for goal (diff): %f", orientation_diff);
-            double rotation_sign = -2 * (orientation_diff < 0) + 1;
-            robot_cmd.angular.z = 
-              rotation_sign * min_in_place_vel_th_ + k_p_ * orientation_diff;
-            if (fabs(robot_cmd.angular.z) > max_vel_th_) { // limit max rotation
-              robot_cmd.angular.z = rotation_sign * max_vel_th_;
-            }
-          } else {
-            ROS_INFO ("TrajectoryController: Goal reached with distance %.2f, %.2f (od = %.2f)"
-                "; sending zero velocity",
-                bubble_diff.linear.x, bubble_diff.linear.y, orientation_diff);
-            // goal position reached
-            robot_cmd.linear.x = 0.0;
-            robot_cmd.angular.z = 0.0;
-            goal_reached = true;
+        // Calculate orientation difference to goal orientation (not captured in bubble_diff)
+        double robot_yaw = tf::getYaw(elastic_band_.at(0).center.pose.orientation);
+        double goal_yaw = tf::getYaw(elastic_band_.at((int)elastic_band_.size() - 1).center.pose.orientation);
+        float orientation_diff = angles::normalize_angle(goal_yaw - robot_yaw);
+        if (fabs(orientation_diff) > tolerance_rot_) {
+          in_final_goal_turn_ = true;
+          ROS_DEBUG("Performing in place rotation for goal (diff): %f", orientation_diff);
+          double rotation_sign = -2 * (orientation_diff < 0) + 1;
+          robot_cmd.angular.z = 
+            rotation_sign * min_in_place_vel_th_ + k_p_ * orientation_diff;
+          if (fabs(robot_cmd.angular.z) > max_vel_th_) { // limit max rotation
+            robot_cmd.angular.z = rotation_sign * max_vel_th_;
           }
-          command_provided = true;
-          break;
+        } else {
+          in_final_goal_turn_ = false; // Goal reached
+          ROS_INFO ("TrajectoryController: Goal reached with distance %.2f, %.2f (od = %.2f)"
+              "; sending zero velocity",
+              bubble_diff.linear.x, bubble_diff.linear.y, orientation_diff);
+          // goal position reached
+          robot_cmd.linear.x = 0.0;
+          robot_cmd.angular.z = 0.0;
+          goal_reached = true;
         }
+        command_provided = true;
       }
     }
 
@@ -282,6 +274,8 @@ namespace eband_local_planner{
 
     // Check 1 - check if the robot's current pose is too misaligned with the next bubble
     if (!command_provided) {
+      ROS_DEBUG("Goal has not been reached, performing checks to move towards goal");
+
       // calculate an estimate of the in-place rotation threshold
       double distance_to_next_bubble = sqrt(
           bubble_diff.linear.x * bubble_diff.linear.x + 
@@ -307,7 +301,6 @@ namespace eband_local_planner{
         command_provided = true;
       }
     }
-
 
     // Check 3 - If we reach here, it means we need to use our PID controller to 
     // move towards the next bubble
