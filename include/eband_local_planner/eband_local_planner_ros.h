@@ -155,9 +155,6 @@ namespace eband_local_planner{
       boost::shared_ptr<EBandVisualization> eband_visual_;
       boost::shared_ptr<EBandTrajectoryCtrl> eband_trj_ctrl_;
 
-      // hack introduced with diff drive plugin (mostly to test a theory)
-      int band_snapped_hack_count_;
-      bool band_snapped_hack_;
       bool goal_reached_;
 
       // flags
