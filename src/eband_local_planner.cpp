@@ -1845,13 +1845,122 @@ namespace eband_local_planner{
 
 
   // type conversions
+  bool EBandPlanner::repairPlanAsNeccessary(std::vector<geometry_msgs::PoseStamped> plan, geometry_msgs::PoseStamped end_of_current_band) {
 
-  bool EBandPlanner::convertPlanToBand(std::vector<geometry_msgs::PoseStamped> plan, std::vector<Bubble>& band)
+    if (plan.size() == 0) {
+      ROS_DEBUG("Attempting to check and repair empty plan. This cannot work. Aborted!");
+      return false;
+    }
+
+    float distance = 0.0f;
+    bool band_snapped = false;
+    // Check if current plan is in collision
+    for(int i = 0; i < ((int) plan.size()); i++)
+    {
+#ifdef DEBUG_EBAND_
+      ROS_DEBUG("Checking Frame %d of %d", i, ((int) plan.size()) );
+#endif
+
+      // calc Size of Bubbles by calculating Dist to nearest Obstacle [depends kinematic, environment]
+      if(!calcObstacleKinematicDistance(tmp_band[i].center.pose, distance))
+      {
+        // frame must not be immediately in collision -> otherwise calculation of gradient will later be invalid
+        ROS_WARN("Calculation of Distance between bubble and nearest obstacle failed. Frame %d of %d outside map", i, ((int) plan.size()) );
+        band_snapped = true;
+        break;
+      }
+
+      if(distance <= 0.0)
+      {
+        // frame must not be immediately in collision -> otherwise calculation of gradient will later be invalid
+        ROS_WARN("Calculation of Distance between bubble and nearest obstacle failed. Frame %d of %d in collision. Plan invalid", i, ((int) plan.size()) );
+        band_snapped = true;
+        break;
+      }
+
+    }
+
+    if (!band_snapped) {
+      return;
+    }
+
+    ROS_DEBUG("The band has snapped. Attempting band repair!");
+
+    // Initialize NavFn
+    // Attempt band repair
+    float move_goal_threshold_world = 0.25;
+    // Get Distance threshold in costmap pixels
+    int move_goal_threshold = 
+      move_goal_threshold_world / costmap_->getResolution(); 
+
+    unsigned int end_current_x, end_current_y;
+    if (!costmap_->worldToMap(end_of_current_band.pose.position.x,
+          end_of_current_band.pose.position.y, end_current_x, end_current_y)) {
+      ROS_DEBUG("The end of the current band is not in the map. Cannot repair!");
+      return false;
+    }
+    unsigned int goal_cell_x, goal_cell_y;
+    costmap_->worldToMapNoBounds(plan[plan.size() - 1].pose.position.x,
+        plan[plan.size() - 1].pose.position.y, goal_cell_x, goal_cell_y);
+
+    // Within this threshold, find the free point in the costmap 
+    // closest to the end of the current band
+    bool closest_free_point_found = false;
+    int goal_alternative_x = goal_cell_x;
+    int goal_alternative_y = goal_cell_y;
+    int goal_alternative_distance_sq = std::numeric_limits<int>::max();
+    for (int cell_x = goal_cell_x-move_goal_threshold; 
+        cell_x <= goal_cell_x+move_goal_threshold; ++cell_x) {
+      if (cell_x < 0 || cell_x >= costmap_->getSizeInCellsX()) 
+        continue;
+      for (int cell_y = goal_cell_x-move_goal_threshold; 
+          cell_y <= goal_cell_x+move_goal_threshold; ++cell_y) {
+        if (cell_y < 0 || cell_y >= costmap_->getSizeInCellsY()) 
+          continue;
+        unsigned char cost = costmap_->getCost(cell_x, cell_y);
+        if (cost != costmap_2d::LETHAL_OBSTACLE && 
+            cost != costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+          int x_diff = ((int)end_current_x - (int)cell_x); 
+          int y_diff = ((int)end_current_y - (int)cell_y); 
+          int distance_sq = x_diff*x_diff + y_diff*y_diff;
+          if (distance_sq < goal_alternative_distance_sq) {
+            goal_alternative_x = cell_x;
+            goal_alternative_y = cell_y;
+            goal_alternative_distance_sq = distance_sq;
+            closest_free_point_found = true;
+          }
+        }
+      }
+    }
+
+    if (!closest_free_point_found) {
+      ROS_DEBUG("No point within a neighbourhood of the goal is free. Cannot repair!");
+      return false;
+    }
+
+    // Now with the alternative available, use NavFn to find a path
+
+        
+
+
+
+
+    
+
+
+  }
+
+  bool EBandPlanner::convertPlanToBand(std::vector<geometry_msgs::PoseStamped> plan, std::vector<Bubble>& band, geometry_msgs::PoseStamped end_of_current_band)
   {
     // check if plugin initialized
     if(!initialized_)
     {
       ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+      return false;
+    }
+
+    if (!repairPlanAsNeccessary(plan, end_of_current_band)) {
+      ROS_WARN("Unable to repair band!");
       return false;
     }
 
@@ -1868,29 +1977,9 @@ namespace eband_local_planner{
     tmp_band.resize(plan.size());
     for(int i = 0; i < ((int) plan.size()); i++)
     {
-#ifdef DEBUG_EBAND_
-      ROS_DEBUG("Checking Frame %d of %d", i, ((int) plan.size()) );
-#endif
 
       // set poses in plan as centers of bubbles
       tmp_band[i].center = plan[i];
-
-      // calc Size of Bubbles by calculating Dist to nearest Obstacle [depends kinematic, environment]
-      if(!calcObstacleKinematicDistance(tmp_band[i].center.pose, distance))
-      {
-        // frame must not be immediately in collision -> otherwise calculation of gradient will later be invalid
-        ROS_WARN("Calculation of Distance between bubble and nearest obstacle failed. Frame %d of %d outside map", i, ((int) plan.size()) );
-        return false;
-      }
-
-      if(distance <= 0.0)
-      {
-        // frame must not be immediately in collision -> otherwise calculation of gradient will later be invalid
-        ROS_WARN("Calculation of Distance between bubble and nearest obstacle failed. Frame %d of %d in collision. Plan invalid", i, ((int) plan.size()) );
-        // TODO if frame in collision try to repair band instaed of aborting averything
-        return false;
-      }
-
 
       // assign to expansion of bubble
       tmp_band[i].expansion = distance;
