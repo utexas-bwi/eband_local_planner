@@ -163,8 +163,6 @@ namespace eband_local_planner{
       return false;
     }
 
-    eband_visual_->publishBand("bubbles", elastic_band_);
-
     // close gaps and remove redundant bubbles
     ROS_DEBUG("Refining Band");
     if(!refineBand(elastic_band_))
@@ -172,7 +170,6 @@ namespace eband_local_planner{
       ROS_WARN("Band is broken. Could not close gaps in converted path. Path not set. Global replanning needed");
       return false;
     }
-
 
     ROS_DEBUG("Refinement done - Band set.");
     return true;
@@ -2055,7 +2052,7 @@ namespace eband_local_planner{
     // write to referenced variable
     band = tmp_band;
 
-    ROS_INFO("Successfully converted plan to band");
+    ROS_DEBUG("Successfully converted plan to band");
     return true;
   }
 

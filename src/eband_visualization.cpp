@@ -344,6 +344,7 @@ namespace eband_local_planner{
       // scale ~ diameter --> is 2x expansion ~ radius
       double scale = sqrt( (wrench.wrench.force.x * wrench.wrench.force.x) + (wrench.wrench.force.y * wrench.wrench.force.y) +
           ( (wrench.wrench.torque.z/getCircumscribedRadius(*costmap_ros_))*(wrench.wrench.torque.z/getCircumscribedRadius(*costmap_ros_)) ) );
+      scale = scale / 10.0;
       marker.scale.x = scale; //1.0;
       marker.scale.y = scale; //1.0;
       marker.scale.z = scale; //1.0;
