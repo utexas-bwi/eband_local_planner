@@ -163,6 +163,7 @@ namespace eband_local_planner{
       return false;
     }
 
+    eband_visual_->publishBand("bubbles", elastic_band_);
 
     // close gaps and remove redundant bubbles
     ROS_DEBUG("Refining Band");
@@ -1864,7 +1865,7 @@ namespace eband_local_planner{
     for(int i = 0; i < ((int) plan.size()); i++)
     {
 #ifdef WARN_EBAND_
-      ROS_WARN("Checking Frame %d of %d", i, ((int) plan.size()) );
+      ROS_DEBUG("Checking Frame %d of %d", i, ((int) plan.size()) );
 #endif
 
       // calc Size of Bubbles by calculating Dist to nearest Obstacle [depends kinematic, environment]
@@ -1895,7 +1896,7 @@ namespace eband_local_planner{
       return false;
     }
 
-    ROS_WARN("The band has snapped. Attempting band repair!");
+    ROS_DEBUG("The band has snapped. Attempting band repair!");
 
     // Initialize NavFn
     // Attempt band repair
@@ -1949,9 +1950,9 @@ namespace eband_local_planner{
     costmap_->mapToWorld(goal_alternative_x, goal_alternative_y,
         goal_alternative_world_x, goal_alternative_world_y);
 
-    ROS_WARN_STREAM("end of current goal: " << repair_from.pose.position.x << ", " << repair_from.pose.position.y); 
-    ROS_WARN_STREAM("original goal: " << plan.back().pose.position.x << ", " << plan.back().pose.position.y); 
-    ROS_WARN_STREAM("modified goal: " << goal_alternative_world_x << ", "<< goal_alternative_world_y);
+    ROS_DEBUG_STREAM("end of current goal: " << repair_from.pose.position.x << ", " << repair_from.pose.position.y); 
+    ROS_DEBUG_STREAM("original goal: " << plan.back().pose.position.x << ", " << plan.back().pose.position.y); 
+    ROS_DEBUG_STREAM("modified goal: " << goal_alternative_world_x << ", "<< goal_alternative_world_y);
     if (!closest_free_point_found) {
       ROS_WARN("No point within a neighbourhood of the goal is free. Cannot repair!");
       return false;
@@ -1969,13 +1970,11 @@ namespace eband_local_planner{
     path_maker.setSize(nx, ny);
     float* potential_array = new float[4 * nx * ny];
 
-    ROS_WARN("Looking for legal path!");
+    ROS_DEBUG("Looking for legal path!");
 
     bool found_legal = planner.calculatePotentials(costmap_->getCharMap(),
         end_current_x, end_current_y, goal_alternative_x, goal_alternative_y,
         nx * ny * 2, potential_array);
-
-    ROS_WARN("Found legal path!");
 
     if (found_legal) {
       std::vector<std::pair<float, float> > path;
@@ -2006,6 +2005,12 @@ namespace eband_local_planner{
       } else {
         found_legal = false;
       }
+    }
+ 
+    if (found_legal) {
+      ROS_INFO("Band successfully repaired!");
+    } else {
+      ROS_WARN("Unable to find suitable alternative. Band repair failed!");
     }
 
     delete potential_array;
@@ -2050,7 +2055,7 @@ namespace eband_local_planner{
     // write to referenced variable
     band = tmp_band;
 
-    ROS_DEBUG("Successfully converted plan to band");
+    ROS_INFO("Successfully converted plan to band");
     return true;
   }
 
