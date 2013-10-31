@@ -36,7 +36,9 @@
  *********************************************************************/
 
 #include <eband_local_planner/eband_local_planner.h>
-
+#include <global_planner/dijkstra.h>
+#include <global_planner/gradient_path.h>
+#include <global_planner/quadratic_calculator.h>
 
 namespace eband_local_planner{
 
@@ -154,7 +156,7 @@ namespace eband_local_planner{
 
     // convert frames in path into bubbles in band -> sets center of bubbles and calculates expansion
     ROS_DEBUG("Converting Plan to Band");
-    if(!convertPlanToBand(global_plan_, elastic_band_))
+    if(!convertPlanToBand(global_plan_, elastic_band_, global_plan.front()))
     {
       ROS_WARN("Conversion from plan to elastic band failed. Plan probably not collision free. Plan not set for optimization");
       // TODO try to do local repairs of band
@@ -259,7 +261,7 @@ namespace eband_local_planner{
 
     // convert plan to band
     std::vector<Bubble> band_to_add;
-    if(!convertPlanToBand(plan_to_add, band_to_add))
+    if(!convertPlanToBand(plan_to_add, band_to_add, elastic_band_.back().center))
     {
       ROS_DEBUG("Conversion from plan to elastic band failed. Plan not appended");
       // TODO try to do local repairs of band
@@ -1845,14 +1847,14 @@ namespace eband_local_planner{
 
 
   // type conversions
-  bool EBandPlanner::repairPlanAsNeccessary(std::vector<geometry_msgs::PoseStamped> plan, geometry_msgs::PoseStamped end_of_current_band) {
+  bool EBandPlanner::repairPlanAsNeccessary(std::vector<geometry_msgs::PoseStamped>& plan, geometry_msgs::PoseStamped end_of_current_band) {
 
     if (plan.size() == 0) {
       ROS_DEBUG("Attempting to check and repair empty plan. This cannot work. Aborted!");
       return false;
     }
 
-    float distance = 0.0f;
+    double distance = 0.0f;
     bool band_snapped = false;
     // Check if current plan is in collision
     for(int i = 0; i < ((int) plan.size()); i++)
@@ -1862,7 +1864,7 @@ namespace eband_local_planner{
 #endif
 
       // calc Size of Bubbles by calculating Dist to nearest Obstacle [depends kinematic, environment]
-      if(!calcObstacleKinematicDistance(tmp_band[i].center.pose, distance))
+      if(!calcObstacleKinematicDistance(plan[i].pose, distance))
       {
         // frame must not be immediately in collision -> otherwise calculation of gradient will later be invalid
         ROS_WARN("Calculation of Distance between bubble and nearest obstacle failed. Frame %d of %d outside map", i, ((int) plan.size()) );
@@ -1881,7 +1883,7 @@ namespace eband_local_planner{
     }
 
     if (!band_snapped) {
-      return;
+      return false;
     }
 
     ROS_DEBUG("The band has snapped. Attempting band repair!");
@@ -1899,7 +1901,7 @@ namespace eband_local_planner{
       ROS_DEBUG("The end of the current band is not in the map. Cannot repair!");
       return false;
     }
-    unsigned int goal_cell_x, goal_cell_y;
+    int goal_cell_x, goal_cell_y;
     costmap_->worldToMapNoBounds(plan[plan.size() - 1].pose.position.x,
         plan[plan.size() - 1].pose.position.y, goal_cell_x, goal_cell_y);
 
@@ -1939,15 +1941,54 @@ namespace eband_local_planner{
     }
 
     // Now with the alternative available, use NavFn to find a path
+    int start[2] = {end_current_x, end_current_y};
+    int goal[2] = {goal_alternative_x, goal_alternative_y};
 
-        
+    int nx = costmap_->getSizeInCellsX();
+    int ny = costmap_->getSizeInCellsY();
+    boost::shared_ptr<global_planner::PotentialCalculator> 
+      p_calc (new global_planner::QuadraticCalculator(nx, ny));
+    global_planner::DijkstraExpansion planner(p_calc.get(), nx, ny);
+    global_planner::GradientPath path_maker(p_calc.get());
+    path_maker.setSize(nx, ny);
+    float* potential_array = new float[nx * ny];
 
+    bool found_legal = planner.calculatePotentials(costmap_->getCharMap(),
+        end_current_x, end_current_y, goal_alternative_x, goal_alternative_y,
+        nx * ny * 2, potential_array);
 
+    if (found_legal) {
+      std::vector<std::pair<float, float> > path;
+      if (path_maker.getPath(potential_array, goal_alternative_x, goal_alternative_y, path)) {
 
+        std::string plan_frame_id = plan[0].header.frame_id;
+        ros::Time plan_time = plan[0].header.stamp;
 
-    
+        // Clear existing useless plan
+        plan.clear();
 
+        for (int i = 0; i < path.size(); ++i) {
+          //convert the plan to world coordinates
+          double world_x, world_y;
+          costmap_->mapToWorld(path[i].first, path[i].second, world_x, world_y);
+          geometry_msgs::PoseStamped pose;
+          pose.header.frame_id = plan_frame_id;
+          pose.header.stamp = plan_time;
+          pose.pose.position.x = world_x;
+          pose.pose.position.y = world_y;
+          pose.pose.position.z = 0.0;
+          pose.pose.orientation.x = 0.0;
+          pose.pose.orientation.y = 0.0;
+          pose.pose.orientation.z = 0.0;
+          pose.pose.orientation.w = 1.0;
+          plan.push_back(pose);
+        }
+      } else {
+        found_legal = false;
+      }
+    }
 
+    return found_legal;
   }
 
   bool EBandPlanner::convertPlanToBand(std::vector<geometry_msgs::PoseStamped> plan, std::vector<Bubble>& band, geometry_msgs::PoseStamped end_of_current_band)

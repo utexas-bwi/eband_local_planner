@@ -346,7 +346,10 @@ namespace eband_local_planner{
        * @param band is the resulting sequence of bubbles
        * @return true if path was successfully converted - band did not break
        */
-      bool convertPlanToBand(std::vector<geometry_msgs::PoseStamped> plan, std::vector<Bubble>& band);
+      bool repairPlanAsNeccessary(std::vector<geometry_msgs::PoseStamped>& plan, 
+          geometry_msgs::PoseStamped end_of_current_band);
+      bool convertPlanToBand(std::vector<geometry_msgs::PoseStamped> plan, std::vector<Bubble>& band, 
+          geometry_msgs::PoseStamped end_of_current_band);
 
 
       /**
