@@ -37,7 +37,7 @@
 
 #include <eband_local_planner/eband_local_planner.h>
 #include <global_planner/dijkstra.h>
-#include <global_planner/gradient_path.h>
+#include <global_planner/grid_path.h>
 #include <global_planner/quadratic_calculator.h>
 
 namespace eband_local_planner{
@@ -156,7 +156,7 @@ namespace eband_local_planner{
 
     // convert frames in path into bubbles in band -> sets center of bubbles and calculates expansion
     ROS_DEBUG("Converting Plan to Band");
-    if(!convertPlanToBand(global_plan_, elastic_band_, global_plan.front()))
+    if(!convertPlanToBand(global_plan_, elastic_band_, global_plan.front(), true))
     {
       ROS_WARN("Conversion from plan to elastic band failed. Plan probably not collision free. Plan not set for optimization");
       // TODO try to do local repairs of band
@@ -261,10 +261,14 @@ namespace eband_local_planner{
 
     // convert plan to band
     std::vector<Bubble> band_to_add;
-    if(!convertPlanToBand(plan_to_add, band_to_add, elastic_band_.back().center))
-    {
+    geometry_msgs::PoseStamped repair_from = elastic_band_.back().center;
+    bool repair_band = true;
+    if (add_frames_at == add_front) {
+      repair_from = elastic_band_.front().center; 
+      repair_band = false;
+    }
+    if(!convertPlanToBand(plan_to_add, band_to_add, repair_from, repair_band)) {
       ROS_DEBUG("Conversion from plan to elastic band failed. Plan not appended");
-      // TODO try to do local repairs of band
       return false;
     }
 
@@ -1847,10 +1851,10 @@ namespace eband_local_planner{
 
 
   // type conversions
-  bool EBandPlanner::repairPlanAsNeccessary(std::vector<geometry_msgs::PoseStamped>& plan, geometry_msgs::PoseStamped end_of_current_band) {
+  bool EBandPlanner::repairPlanAsNeccessary(std::vector<geometry_msgs::PoseStamped>& plan, geometry_msgs::PoseStamped repair_from, bool repair_band) {
 
     if (plan.size() == 0) {
-      ROS_DEBUG("Attempting to check and repair empty plan. This cannot work. Aborted!");
+      ROS_WARN("Attempting to check and repair empty plan. This cannot work. Aborted!");
       return false;
     }
 
@@ -1859,8 +1863,8 @@ namespace eband_local_planner{
     // Check if current plan is in collision
     for(int i = 0; i < ((int) plan.size()); i++)
     {
-#ifdef DEBUG_EBAND_
-      ROS_DEBUG("Checking Frame %d of %d", i, ((int) plan.size()) );
+#ifdef WARN_EBAND_
+      ROS_WARN("Checking Frame %d of %d", i, ((int) plan.size()) );
 #endif
 
       // calc Size of Bubbles by calculating Dist to nearest Obstacle [depends kinematic, environment]
@@ -1883,10 +1887,15 @@ namespace eband_local_planner{
     }
 
     if (!band_snapped) {
+      return true;
+    }
+    
+    if (!repair_band) {
+      ROS_WARN("The band has snapped, but no repairs requested.");
       return false;
     }
 
-    ROS_DEBUG("The band has snapped. Attempting band repair!");
+    ROS_WARN("The band has snapped. Attempting band repair!");
 
     // Initialize NavFn
     // Attempt band repair
@@ -1896,14 +1905,14 @@ namespace eband_local_planner{
       move_goal_threshold_world / costmap_->getResolution(); 
 
     unsigned int end_current_x, end_current_y;
-    if (!costmap_->worldToMap(end_of_current_band.pose.position.x,
-          end_of_current_band.pose.position.y, end_current_x, end_current_y)) {
-      ROS_DEBUG("The end of the current band is not in the map. Cannot repair!");
+    if (!costmap_->worldToMap(repair_from.pose.position.x,
+          repair_from.pose.position.y, end_current_x, end_current_y)) {
+      ROS_WARN("The end of the current band is not in the map. Cannot repair!");
       return false;
     }
     int goal_cell_x, goal_cell_y;
-    costmap_->worldToMapNoBounds(plan[plan.size() - 1].pose.position.x,
-        plan[plan.size() - 1].pose.position.y, goal_cell_x, goal_cell_y);
+    costmap_->worldToMapNoBounds(plan.back().pose.position.x,
+        plan.back().pose.position.y, goal_cell_x, goal_cell_y);
 
     // Within this threshold, find the free point in the costmap 
     // closest to the end of the current band
@@ -1915,8 +1924,8 @@ namespace eband_local_planner{
         cell_x <= goal_cell_x+move_goal_threshold; ++cell_x) {
       if (cell_x < 0 || cell_x >= costmap_->getSizeInCellsX()) 
         continue;
-      for (int cell_y = goal_cell_x-move_goal_threshold; 
-          cell_y <= goal_cell_x+move_goal_threshold; ++cell_y) {
+      for (int cell_y = goal_cell_y-move_goal_threshold; 
+          cell_y <= goal_cell_y+move_goal_threshold; ++cell_y) {
         if (cell_y < 0 || cell_y >= costmap_->getSizeInCellsY()) 
           continue;
         unsigned char cost = costmap_->getCost(cell_x, cell_y);
@@ -1935,27 +1944,38 @@ namespace eband_local_planner{
       }
     }
 
+    double goal_alternative_world_x;
+    double goal_alternative_world_y;
+    costmap_->mapToWorld(goal_alternative_x, goal_alternative_y,
+        goal_alternative_world_x, goal_alternative_world_y);
+
+    ROS_WARN_STREAM("end of current goal: " << repair_from.pose.position.x << ", " << repair_from.pose.position.y); 
+    ROS_WARN_STREAM("original goal: " << plan.back().pose.position.x << ", " << plan.back().pose.position.y); 
+    ROS_WARN_STREAM("modified goal: " << goal_alternative_world_x << ", "<< goal_alternative_world_y);
     if (!closest_free_point_found) {
-      ROS_DEBUG("No point within a neighbourhood of the goal is free. Cannot repair!");
+      ROS_WARN("No point within a neighbourhood of the goal is free. Cannot repair!");
       return false;
     }
 
     // Now with the alternative available, use NavFn to find a path
-    int start[2] = {end_current_x, end_current_y};
-    int goal[2] = {goal_alternative_x, goal_alternative_y};
-
     int nx = costmap_->getSizeInCellsX();
     int ny = costmap_->getSizeInCellsY();
     boost::shared_ptr<global_planner::PotentialCalculator> 
       p_calc (new global_planner::QuadraticCalculator(nx, ny));
     global_planner::DijkstraExpansion planner(p_calc.get(), nx, ny);
-    global_planner::GradientPath path_maker(p_calc.get());
+    global_planner::GridPath path_maker(p_calc.get());
+    p_calc->setSize(nx, ny);
+    planner.setSize(nx, ny);
     path_maker.setSize(nx, ny);
-    float* potential_array = new float[nx * ny];
+    float* potential_array = new float[4 * nx * ny];
+
+    ROS_WARN("Looking for legal path!");
 
     bool found_legal = planner.calculatePotentials(costmap_->getCharMap(),
         end_current_x, end_current_y, goal_alternative_x, goal_alternative_y,
         nx * ny * 2, potential_array);
+
+    ROS_WARN("Found legal path!");
 
     if (found_legal) {
       std::vector<std::pair<float, float> > path;
@@ -1967,7 +1987,7 @@ namespace eband_local_planner{
         // Clear existing useless plan
         plan.clear();
 
-        for (int i = 0; i < path.size(); ++i) {
+        for (int i = path.size() - 1; i >= 0; --i) {
           //convert the plan to world coordinates
           double world_x, world_y;
           costmap_->mapToWorld(path[i].first, path[i].second, world_x, world_y);
@@ -1988,10 +2008,11 @@ namespace eband_local_planner{
       }
     }
 
+    delete potential_array;
     return found_legal;
   }
 
-  bool EBandPlanner::convertPlanToBand(std::vector<geometry_msgs::PoseStamped> plan, std::vector<Bubble>& band, geometry_msgs::PoseStamped end_of_current_band)
+  bool EBandPlanner::convertPlanToBand(std::vector<geometry_msgs::PoseStamped> plan, std::vector<Bubble>& band, geometry_msgs::PoseStamped repair_from, bool repair_band)
   {
     // check if plugin initialized
     if(!initialized_)
@@ -2000,7 +2021,7 @@ namespace eband_local_planner{
       return false;
     }
 
-    if (!repairPlanAsNeccessary(plan, end_of_current_band)) {
+    if (!repairPlanAsNeccessary(plan, repair_from, repair_band)) {
       ROS_WARN("Unable to repair band!");
       return false;
     }
