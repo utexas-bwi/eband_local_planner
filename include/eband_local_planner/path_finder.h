@@ -64,22 +64,23 @@ namespace eband_local_planner {
       int current_x = current % size_x;
       int current_y = current / size_x;
 
-      int x_offset[] = {0, -1, 1, 0};
-      int y_offset[] = {-1, 0, 0, 1};
-      for (int n_num = 0; n_num < 4; ++n_num) {
+      int x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+      int y_offset[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+      for (int n_num = 0; n_num < 8; ++n_num) {
         int n_x = current_x + x_offset[n_num];
         int n_y = current_y + y_offset[n_num];
         if (n_x < 0 || n_x >= size_x || n_y < 0 || n_y > size_y) {
           continue;
         }
         int n = n_y * size_x + n_x;
-        if (map[n] == costmap_2d::LETHAL_OBSTACLE ||
-            map[n] == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
+        if (map[n] >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
             closed_set[n]) {
           continue;
         }
 
-        float tentative_g_score = g_score[current] + 1;
+        float tentative_g_score = g_score[current] + 
+            sqrt((n_x-current_x)*(n_x-current_x)+(n_y-current_y)*(n_y-current_y)) +
+            log(map[n] + 1)/10.0f;
 
         bool tentative_is_better = false;
         if (!open_set.count(n)) {

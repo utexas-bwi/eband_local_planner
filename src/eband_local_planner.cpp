@@ -1901,7 +1901,7 @@ namespace eband_local_planner{
 
     // Initialize NavFn
     // Attempt band repair
-    float move_goal_threshold_world = 0.25;
+    float move_goal_threshold_world = 0.3;
     // Get Distance threshold in costmap pixels
     int move_goal_threshold = 
       move_goal_threshold_world / costmap_->getResolution(); 
@@ -1931,8 +1931,7 @@ namespace eband_local_planner{
         if (cell_y < 0 || cell_y >= costmap_->getSizeInCellsY()) 
           continue;
         unsigned char cost = costmap_->getCost(cell_x, cell_y);
-        if (cost != costmap_2d::LETHAL_OBSTACLE && 
-            cost != costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+        if (cost < costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 150) {
           int x_diff = ((int)end_current_x - (int)cell_x); 
           int y_diff = ((int)end_current_y - (int)cell_y); 
           int distance_sq = x_diff*x_diff + y_diff*y_diff;
@@ -2012,7 +2011,7 @@ namespace eband_local_planner{
         band.resize(plan.size());
         for (unsigned q = 0; q < plan.size(); ++q) {
           band[q].center = plan[q];
-          band[q].expansion = 0.25;
+          band[q].expansion = 0.02;
         }
         eband_visual_->publishBand("repaired_band", band);
       } else {
