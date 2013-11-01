@@ -97,7 +97,7 @@ namespace eband_local_planner{
     marker_heading_name_space.append("_heading");
 
     // convert elastic band to msg
-    for(int i = 0; i < ((int) band.size()); i++)
+    for(int i = 0; i < ((int) band.size()) - 1; i++)
     {
       // convert bubbles in eband to marker msg
       bubbleToMarker(band[i], eband_msg.markers[i], marker_name_space, i, green);
@@ -105,6 +105,7 @@ namespace eband_local_planner{
       // convert bubbles in eband to marker msg
       // bubbleHeadingToMarker(band[i], eband_heading_msg.markers[i], marker_heading_name_space, i, green);
     }
+    bubbleToMarker(band.back(), eband_msg.markers.back(), marker_name_space, band.size() - 1, red);
 
     // publish
     bubble_pub_.publish(eband_msg);
@@ -237,10 +238,12 @@ namespace eband_local_planner{
       case blue:	{ marker.color.b = 1.0f; break; }
     }
     // transparency (alpha value < 1 : displays marker transparent)
-    marker.color.a = 0.75;
+    marker.color.a = 0.2;
 
     // lifetime of this marker
     marker.lifetime = ros::Duration(marker_lifetime_);
+    if (marker_name_space == "repaired_band")
+      marker.lifetime = ros::Duration(0.0);
   }
 
 

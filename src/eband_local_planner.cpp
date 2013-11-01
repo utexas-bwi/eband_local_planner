@@ -1847,7 +1847,6 @@ namespace eband_local_planner{
     return true;
   }
 
-
   // type conversions
   bool EBandPlanner::repairPlanAsNeccessary(std::vector<geometry_msgs::PoseStamped>& plan, geometry_msgs::PoseStamped repair_from, bool repair_band) {
 
@@ -1947,9 +1946,9 @@ namespace eband_local_planner{
     costmap_->mapToWorld(goal_alternative_x, goal_alternative_y,
         goal_alternative_world_x, goal_alternative_world_y);
 
-    ROS_DEBUG_STREAM("end of current goal: " << repair_from.pose.position.x << ", " << repair_from.pose.position.y); 
-    ROS_DEBUG_STREAM("original goal: " << plan.back().pose.position.x << ", " << plan.back().pose.position.y); 
-    ROS_DEBUG_STREAM("modified goal: " << goal_alternative_world_x << ", "<< goal_alternative_world_y);
+    ROS_INFO_STREAM("end of current goal: " << repair_from.pose.position.x << ", " << repair_from.pose.position.y); 
+    ROS_INFO_STREAM("original goal: " << plan.back().pose.position.x << ", " << plan.back().pose.position.y); 
+    ROS_INFO_STREAM("modified goal: " << goal_alternative_world_x << ", "<< goal_alternative_world_y);
     if (!closest_free_point_found) {
       ROS_WARN("No point within a neighbourhood of the goal is free. Cannot repair!");
       return false;
@@ -1986,6 +1985,11 @@ namespace eband_local_planner{
         for (int i = path.size() - 1; i >= 0; --i) {
           //convert the plan to world coordinates
           double world_x, world_y;
+          unsigned char cost = costmap_->getCost(path[i].first, path[i].second);
+          if (cost == costmap_2d::LETHAL_OBSTACLE ||
+              cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+            ROS_ERROR("Yikes! GP returned a path that goes through an obstacle");
+          }
           costmap_->mapToWorld(path[i].first, path[i].second, world_x, world_y);
           geometry_msgs::PoseStamped pose;
           pose.header.frame_id = plan_frame_id;
@@ -2006,6 +2010,13 @@ namespace eband_local_planner{
  
     if (found_legal) {
       ROS_INFO("Band successfully repaired!");
+      std::vector<Bubble> band;
+      band.resize(plan.size());
+      for (unsigned q = 0; q < plan.size(); ++q) {
+        band[q].center = plan[q];
+        band[q].expansion = 0.25;
+      }
+      eband_visual_->publishBand("repaired_band", band);
     } else {
       ROS_WARN("Unable to find suitable alternative. Band repair failed!");
     }
