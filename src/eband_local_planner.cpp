@@ -36,9 +36,10 @@
  *********************************************************************/
 
 #include <eband_local_planner/eband_local_planner.h>
-#include <global_planner/dijkstra.h>
-#include <global_planner/grid_path.h>
-#include <global_planner/quadratic_calculator.h>
+#include <eband_local_planner/path_finder.h>
+// #include <global_planner/dijkstra.h>
+// #include <global_planner/grid_path.h>
+// #include <global_planner/quadratic_calculator.h>
 
 namespace eband_local_planner{
 
@@ -270,6 +271,10 @@ namespace eband_local_planner{
       return false;
     }
 
+    if (band_to_add.size() == 0) {
+      ROS_DEBUG("After converting plan to band, no new frames available. Returning to controller without adding new frames.");
+      return true;
+    }
 
     // connect frames to existing band
     ROS_DEBUG("Checking for connections between current band and new bubbles");
@@ -1957,71 +1962,67 @@ namespace eband_local_planner{
     // Now with the alternative available, use NavFn to find a path
     int nx = costmap_->getSizeInCellsX();
     int ny = costmap_->getSizeInCellsY();
-    boost::shared_ptr<global_planner::PotentialCalculator> 
-      p_calc (new global_planner::QuadraticCalculator(nx, ny));
-    global_planner::DijkstraExpansion planner(p_calc.get(), nx, ny);
-    global_planner::GridPath path_maker(p_calc.get());
-    p_calc->setSize(nx, ny);
-    planner.setSize(nx, ny);
-    path_maker.setSize(nx, ny);
-    float* potential_array = new float[4 * nx * ny];
+    // boost::shared_ptr<global_planner::PotentialCalculator> 
+    //   p_calc (new global_planner::QuadraticCalculator(nx, ny));
+    // global_planner::DijkstraExpansion planner(p_calc.get(), nx, ny);
+    // global_planner::GridPath path_maker(p_calc.get());
+    // p_calc->setSize(nx, ny);
+    // planner.setSize(nx, ny);
+    // path_maker.setSize(nx, ny);
+    // float* potential_array = new float[4 * nx * ny];
 
     ROS_DEBUG("Looking for legal path!");
 
-    bool found_legal = planner.calculatePotentials(costmap_->getCharMap(),
+    std::vector<std::pair<int, int> > path;
+    bool found_legal = 
+        searchForPath(costmap_->getCharMap(), nx, ny,
         end_current_x, end_current_y, goal_alternative_x, goal_alternative_y,
-        nx * ny * 2, potential_array);
+        path);
 
     if (found_legal) {
-      std::vector<std::pair<float, float> > path;
-      if (path_maker.getPath(potential_array, goal_alternative_x, goal_alternative_y, path)) {
 
-        std::string plan_frame_id = plan[0].header.frame_id;
-        ros::Time plan_time = plan[0].header.stamp;
+      std::string plan_frame_id = plan[0].header.frame_id;
+      ros::Time plan_time = plan[0].header.stamp;
 
-        // Clear existing useless plan
-        plan.clear();
+      // Clear existing useless plan
+      plan.clear();
 
-        for (int i = path.size() - 1; i >= 0; --i) {
-          //convert the plan to world coordinates
-          double world_x, world_y;
-          unsigned char cost = costmap_->getCost(path[i].first, path[i].second);
-          if (cost == costmap_2d::LETHAL_OBSTACLE ||
-              cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-            ROS_ERROR("Yikes! GP returned a path that goes through an obstacle");
-          }
-          costmap_->mapToWorld(path[i].first, path[i].second, world_x, world_y);
-          geometry_msgs::PoseStamped pose;
-          pose.header.frame_id = plan_frame_id;
-          pose.header.stamp = plan_time;
-          pose.pose.position.x = world_x;
-          pose.pose.position.y = world_y;
-          pose.pose.position.z = 0.0;
-          pose.pose.orientation.x = 0.0;
-          pose.pose.orientation.y = 0.0;
-          pose.pose.orientation.z = 0.0;
-          pose.pose.orientation.w = 1.0;
-          plan.push_back(pose);
-        }
-      } else {
-        found_legal = false;
+      for (int i = 0; i < path.size(); ++i) {
+        //convert the plan to world coordinates
+        double world_x, world_y;
+        costmap_->mapToWorld(path[i].first, path[i].second, world_x, world_y);
+        geometry_msgs::PoseStamped pose;
+        pose.header.frame_id = plan_frame_id;
+        pose.header.stamp = plan_time;
+        pose.pose.position.x = world_x;
+        pose.pose.position.y = world_y;
+        pose.pose.position.z = 0.0;
+        pose.pose.orientation.x = 0.0;
+        pose.pose.orientation.y = 0.0;
+        pose.pose.orientation.z = 0.0;
+        pose.pose.orientation.w = 1.0;
+        plan.push_back(pose);
       }
     }
  
     if (found_legal) {
       ROS_INFO("Band successfully repaired!");
-      std::vector<Bubble> band;
-      band.resize(plan.size());
-      for (unsigned q = 0; q < plan.size(); ++q) {
-        band[q].center = plan[q];
-        band[q].expansion = 0.25;
+      if (plan.size() != 0) {
+        std::vector<Bubble> band;
+        band.resize(plan.size());
+        for (unsigned q = 0; q < plan.size(); ++q) {
+          band[q].center = plan[q];
+          band[q].expansion = 0.25;
+        }
+        eband_visual_->publishBand("repaired_band", band);
+      } else {
+        ROS_INFO("Band repair suggests reducing additional plan to nothing");
       }
-      eband_visual_->publishBand("repaired_band", band);
     } else {
       ROS_WARN("Unable to find suitable alternative. Band repair failed!");
     }
 
-    delete potential_array;
+    /* delete potential_array; */
     return found_legal;
   }
 

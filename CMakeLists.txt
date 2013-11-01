@@ -8,7 +8,7 @@ find_package(catkin REQUIRED
     control_toolbox
     costmap_2d
     geometry_msgs
-    global_planner
+    ## global_planner
     nav_core
     nav_msgs
     pluginlib
