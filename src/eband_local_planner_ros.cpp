@@ -116,6 +116,8 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
         // initialize visualization - set node handle and pointer to costmap
         eband_visual_->initialize(pn, costmap_ros);
 
+        band_hack_in_progress_ = false;
+        band_hack_count_ = 0;
 
         // set initialized flag
         initialized_ = true;
@@ -164,10 +166,11 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
       }
 
       // set plan - as this is fresh from the global planner robot pose should be identical to start frame
+      bool success = true;
       if(!eband_->setPlan(transformed_plan_))
       {
         ROS_ERROR("Setting plan to Elastic Band method failed!");
-        return false;
+        success = false;
       } 
       ROS_INFO("Global plan set to elastic band for optimization");
 
@@ -175,8 +178,31 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
       plan_start_end_counter_ = start_end_counts;
 
       // let eband refine the plan before starting continuous operation (to smooth sampling based plans)
-      eband_->optimizeBand();
-
+      if (!eband_->optimizeBand()) {
+        ROS_ERROR("Band optimization failed while setting plan!");
+        success = false;
+      }
+ 
+      if (!success) {
+        if (band_hack_in_progress_) {
+          band_hack_count_++;
+          if (band_hack_count_ == 10) {
+            ROS_ERROR("Repeated attempts to set the global plan failed!");
+            band_hack_in_progress_ = false;
+            band_hack_count_ = 0;
+            return false;
+          }
+          return true;
+        } else {
+          ROS_INFO("Setting the plan at the global level failed. I would like to try 10 repeated attempts at setting the plan before failing.");
+          band_hack_in_progress_ = true;
+          band_hack_count_ = 0;
+          return true;
+        }
+      } else {
+        band_hack_in_progress_ = false;
+        band_hack_count_ = 0;
+      }
 
       // display result
       std::vector<eband_local_planner::Bubble> current_band;
@@ -196,6 +222,11 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
       if(!initialized_)
       {
         ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+        return false;
+      }
+
+      if (band_hack_in_progress_) {
+        // Need global replanning
         return false;
       }
 

@@ -1982,6 +1982,8 @@ namespace eband_local_planner{
 
       std::string plan_frame_id = plan[0].header.frame_id;
       ros::Time plan_time = plan[0].header.stamp;
+      geometry_msgs::Quaternion final_orientation = 
+        plan.back().pose.orientation;
 
       // Clear existing useless plan
       plan.clear();
@@ -2002,6 +2004,7 @@ namespace eband_local_planner{
         pose.pose.orientation.w = 1.0;
         plan.push_back(pose);
       }
+      plan.back().pose.orientation = final_orientation;
     }
  
     if (found_legal) {
