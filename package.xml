@@ -4,6 +4,7 @@
   <description>The eband_local_planner package implements a plugin to the base_local_planner. It implements the Elastic Band method on the SE2 manifold.</description>
 
   <maintainer email="piyushk@gmail.com">Piyush Khandelwal</maintainer>
+  <maintainer email="jack.oquin@gmail.com">Jack O'Quin</maintainer>
 
   <license>BSD</license>
 
