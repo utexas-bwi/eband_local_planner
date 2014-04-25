@@ -2,10 +2,13 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.2.0 (2014-04-25)
-------------------
-* changing default values for some fudge factors
-* removed band hack. 
+Forthcoming
+-----------
+* added jack as a maintainer for the package
+* 0.2.0
+* updated changelogs in preparation of v0.2.0
+* changing some fudge factors
+* removed band hack. attempting band repair algorithm now
 * changes to hysteresis loop. still has some problems
 * fixed indentation. closes `#10 <https://github.com/utexas-bwi/eband_local_planner/issues/10>`_
 * eband_local_planner now fails when new frames cannot be added to the band. closes `#9 <https://github.com/utexas-bwi/eband_local_planner/issues/9>`_
