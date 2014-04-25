@@ -2,8 +2,8 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2014-04-25)
+------------------
 * changing default values for some fudge factors
 * removed band hack. 
 * changes to hysteresis loop. still has some problems
