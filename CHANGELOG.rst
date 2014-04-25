@@ -2,8 +2,8 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2014-04-25)
+------------------
 * added jack as a maintainer for the package
 * 0.2.0
 * updated changelogs in preparation of v0.2.0
