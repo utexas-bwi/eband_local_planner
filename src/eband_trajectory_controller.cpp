@@ -104,7 +104,9 @@ namespace eband_local_planner{
       node_private.param("k_diff", k_diff_, -0.005);
       node_private.param("bubble_velocity_multiplier", bubble_velocity_multiplier_, 2.0);
       node_private.param("rotation_threshold_multiplier", rotation_threshold_multiplier_, 1.0); //0.75);
+      node_private.param("disallow_hysteresis", disallow_hysteresis_, false); //0.75);
       // Ctrl_rate, k_prop, max_vel_lin, max_vel_th, tolerance_trans, tolerance_rot, min_in_place_vel_th
+      in_final_goal_turn_ = false;
 
       // copy adress of costmap and Transform Listener (handed over from move_base)
       costmap_ros_ = costmap_ros;
@@ -221,9 +223,11 @@ namespace eband_local_planner{
       }
 
       // if you go past tolerance, then try to get closer again
-      if(fabs(bubble_diff.linear.x) > tolerance_trans_ ||
-          fabs(bubble_diff.linear.y) > tolerance_trans_) {
-        in_final_goal_turn_ = false;
+      if (!disallow_hysteresis_) {
+        if(fabs(bubble_diff.linear.x) > tolerance_trans_ ||
+            fabs(bubble_diff.linear.y) > tolerance_trans_) {
+          in_final_goal_turn_ = false;
+        }
       }
 
       // Get the differences between the first 2 bubbles in the robot's frame
@@ -239,6 +243,7 @@ namespace eband_local_planner{
       if((fabs(bubble_diff.linear.x) <= 0.6 * tolerance_trans_ &&
           fabs(bubble_diff.linear.y) <= 0.6 * tolerance_trans_) ||
           in_final_goal_turn_) {
+        ROS_INFO("in final goal turn");
         // Calculate orientation difference to goal orientation (not captured in bubble_diff)
         double robot_yaw = tf::getYaw(elastic_band_.at(0).center.pose.orientation);
         double goal_yaw = tf::getYaw(elastic_band_.at((int)elastic_band_.size() - 1).center.pose.orientation);
@@ -289,6 +294,7 @@ namespace eband_local_planner{
 
       // check if we are above this threshold, if so then perform in-place rotation
       if (fabs(bubble_diff.angular.z) > in_place_rotation_threshold) {
+        ROS_INFO("align to next bubble.");
         robot_cmd.angular.z = k_p_ * bubble_diff.angular.z;
         double rotation_sign = (bubble_diff.angular.z < 0) ? -1.0 : +1.0;
         if (fabs(robot_cmd.angular.z) < min_in_place_vel_th_) {
@@ -306,6 +312,7 @@ namespace eband_local_planner{
     // move towards the next bubble
     if (!command_provided) {
 
+      ROS_INFO("PID to follow next bubble.");
       // Select a linear velocity (based on the current bubble radius)
       double forward_sign = -2 * (bubble_diff.linear.x < 0) + 1;
       double bubble_radius = 0.7 * elastic_band_.at(0).expansion;
