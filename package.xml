@@ -1,7 +1,11 @@
 <package>
   <name>eband_local_planner</name>
   <version>0.2.1</version>
-  <description>The eband_local_planner package implements a plugin to the base_local_planner. It implements the Elastic Band method on the SE2 manifold.</description>
+  <description>
+    The eband_local_planner package implements a plugin to the
+    base_local_planner. It implements the Elastic Band method on the
+    SE2 manifold.
+  </description>
 
   <maintainer email="piyushk@gmail.com">Piyush Khandelwal</maintainer>
   <maintainer email="jack.oquin@gmail.com">Jack O'Quin</maintainer>
@@ -20,6 +24,7 @@
 
   <build_depend>base_local_planner</build_depend>
   <build_depend>control_toolbox</build_depend>
+  <build_depend>cmake_modules</build_depend> <!-- to find Eigen -->
   <build_depend>costmap_2d</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>nav_core</build_depend>
