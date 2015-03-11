@@ -104,7 +104,9 @@ namespace eband_local_planner{
       node_private.param("k_diff", k_diff_, -0.005);
       node_private.param("bubble_velocity_multiplier", bubble_velocity_multiplier_, 2.0);
       node_private.param("rotation_threshold_multiplier", rotation_threshold_multiplier_, 1.0); //0.75);
+      node_private.param("disallow_hysteresis", disallow_hysteresis_, false); //0.75);
       // Ctrl_rate, k_prop, max_vel_lin, max_vel_th, tolerance_trans, tolerance_rot, min_in_place_vel_th
+      in_final_goal_turn_ = false;
 
       // copy adress of costmap and Transform Listener (handed over from move_base)
       costmap_ros_ = costmap_ros;
@@ -221,9 +223,11 @@ namespace eband_local_planner{
       }
 
       // if you go past tolerance, then try to get closer again
-      if(fabs(bubble_diff.linear.x) > tolerance_trans_ ||
-          fabs(bubble_diff.linear.y) > tolerance_trans_) {
-        in_final_goal_turn_ = false;
+      if (!disallow_hysteresis_) {
+        if(fabs(bubble_diff.linear.x) > tolerance_trans_ ||
+            fabs(bubble_diff.linear.y) > tolerance_trans_) {
+          in_final_goal_turn_ = false;
+        }
       }
 
       // Get the differences between the first 2 bubbles in the robot's frame

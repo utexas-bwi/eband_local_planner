@@ -142,6 +142,7 @@ namespace eband_local_planner{
       // diff drive only parameters
       double bubble_velocity_multiplier_;
       double rotation_threshold_multiplier_;
+      bool disallow_hysteresis_;
       bool in_final_goal_turn_;
 
       // flags
