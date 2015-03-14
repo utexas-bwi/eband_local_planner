@@ -2,6 +2,14 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fixed catkin lint warnings in preparation for v0.2.2 release
+* added a bit more paramterization of the algorithm to help navigation in simulation. all changes are backwards
+  compatible. `#17 <https://github.com/utexas-bwi/eband_local_planner/issues/17>`_ from utexas-bwi/piyushk/fix_simulation_navigation
+* made some changes for a future Indigo release. fixed Eigen dependency (`#16 <https://github.com/utexas-bwi/eband_local_planner/issues/16>`_)
+* Contributors: Jack O'Quin, Piyush Khandelwal
+
 0.2.1 (2014-04-25)
 ------------------
 * added jack as a maintainer for the package
