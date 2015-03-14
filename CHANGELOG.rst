@@ -2,8 +2,8 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2 (2015-03-14)
+------------------
 * fixed catkin lint warnings in preparation for v0.2.2 release
 * added a bit more paramterization of the algorithm to help navigation in simulation. all changes are backwards
   compatible. `#17 <https://github.com/utexas-bwi/eband_local_planner/issues/17>`_ from utexas-bwi/piyushk/fix_simulation_navigation
