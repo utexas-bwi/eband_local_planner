@@ -174,7 +174,7 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
           return false;
         }
       }
-      ROS_INFO("Global plan set to elastic band for optimization");
+      ROS_DEBUG("Global plan set to elastic band for optimization");
 
       // plan transformed and set to elastic band successfully - set counters to global variable
       plan_start_end_counter_ = start_end_counts;
