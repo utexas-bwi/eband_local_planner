@@ -146,7 +146,7 @@ namespace eband_local_planner{
     // check whether plan and costmap are in the same frame
     if(global_plan.front().header.frame_id != costmap_ros_->getGlobalFrameID())
     {
-      ROS_ERROR("Elastic Band expects plan for optimization in the %s frame, the plan was sent in the %s frame.", 
+      ROS_ERROR("Elastic Band expects plan for optimization in the %s frame, the plan was sent in the %s frame.",
           costmap_ros_->getGlobalFrameID().c_str(), global_plan.front().header.frame_id.c_str());
       return false;
     }
@@ -251,7 +251,7 @@ namespace eband_local_planner{
     // check whether plan and costmap are in the same frame
     if(plan_to_add.at(0).header.frame_id != costmap_ros_->getGlobalFrameID())
     {
-      ROS_ERROR("Elastic Band expects robot pose for optimization in the %s frame, the pose was sent in the %s frame.", 
+      ROS_ERROR("Elastic Band expects robot pose for optimization in the %s frame, the pose was sent in the %s frame.",
           costmap_ros_->getGlobalFrameID().c_str(), plan_to_add.at(0).header.frame_id.c_str());
       return false;
     }
@@ -277,7 +277,7 @@ namespace eband_local_planner{
       // - for instance to connect band and current robot position
       for(int i = ((int) elastic_band_.size() - 1); i >= 0; i--)
       {
-        // cycle over bubbles from End - connect to bubble furthest away but overlapping	
+        // cycle over bubbles from End - connect to bubble furthest away but overlapping
         if(checkOverlap(band_to_add.back(), elastic_band_.at(i)))
         {
           bubble_connect = i;
@@ -409,7 +409,7 @@ namespace eband_local_planner{
     // check whether band and costmap are in the same frame
     if(band.front().center.header.frame_id != costmap_ros_->getGlobalFrameID())
     {
-      ROS_ERROR("Elastic Band expects plan for optimization in the %s frame, the plan was sent in the %s frame.", 
+      ROS_ERROR("Elastic Band expects plan for optimization in the %s frame, the plan was sent in the %s frame.",
           costmap_ros_->getGlobalFrameID().c_str(), band.front().center.header.frame_id.c_str());
       return false;
     }
@@ -677,7 +677,7 @@ namespace eband_local_planner{
     ROS_DEBUG("Refining Recursive - Gap detected, fill recursive DONE");
 #endif
 
-    // we could fill the gap (reached leaf of this branch) 
+    // we could fill the gap (reached leaf of this branch)
     return true;
   }
 
@@ -1487,7 +1487,7 @@ namespace eband_local_planner{
       // actually we should never end up here - band should have been considered as broken
       ROS_DEBUG("Calculating external forces on broken band. Bubble should have been removed. Local Planner probably ill configured");
     }
-    else			
+    else
       wrench.force.x = -external_force_gain_*(distance2 - distance1)/(2.0*curr_bubble.expansion);
     // TODO above equations skip term to make forces continuous at end of influence region - test to add corresponding term
 

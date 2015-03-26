@@ -166,9 +166,14 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
       // set plan - as this is fresh from the global planner robot pose should be identical to start frame
       if(!eband_->setPlan(transformed_plan_))
       {
-        ROS_ERROR("Setting plan to Elastic Band method failed!");
-        return false;
-      } 
+        // We've had some difficulty where the global planner keeps returning a valid path that runs through an obstacle
+        // in the local costmap. See issue #5. Here we clear the local costmap and try one more time.
+        costmap_ros_->resetLayers();
+        if (!eband_->setPlan(transformed_plan_)) {
+          ROS_ERROR("Setting plan to Elastic Band method failed!");
+          return false;
+        }
+      }
       ROS_INFO("Global plan set to elastic band for optimization");
 
       // plan transformed and set to elastic band successfully - set counters to global variable
@@ -191,7 +196,7 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
 
 
     bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
-    {	
+    {
       // check if plugin initialized
       if(!initialized_)
       {
@@ -364,15 +369,15 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
       // tf::Stamped<tf::Pose> global_pose;
       // costmap_ros_->getRobotPose(global_pose);
 
-      // // analogous to dwa_planner the actual check uses the routine implemented in trajectory_planner (trajectory rollout) 
+      // // analogous to dwa_planner the actual check uses the routine implemented in trajectory_planner (trajectory rollout)
       // bool is_goal_reached = base_local_planner::isGoalReached(
-      //     *tf_, global_plan_, *(costmap_ros_->getCostmap()), 
-      //     costmap_ros_->getGlobalFrameID(), global_pose, base_odom, 
-      // 		rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_, 
+      //     *tf_, global_plan_, *(costmap_ros_->getCostmap()),
+      //     costmap_ros_->getGlobalFrameID(), global_pose, base_odom,
+      // 		rot_stopped_vel_, trans_stopped_vel_, xy_goal_tolerance_,
       //     yaw_goal_tolerance_
       // );
 
-      // return is_goal_reached; 
+      // return is_goal_reached;
 
     }
 
