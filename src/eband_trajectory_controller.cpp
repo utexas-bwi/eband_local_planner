@@ -208,6 +208,8 @@ namespace eband_local_planner{
         elastic_band_.at(1).center.pose,
         elastic_band_.at(0).center.pose);
 
+    float distance_from_goal = -1.0f;
+
     // Check 1
     // We need to check if we are within the threshold of the final destination
     if (!command_provided) {
@@ -215,9 +217,9 @@ namespace eband_local_planner{
 
       while(curr_target_bubble < ((int) elastic_band_.size()) - 1) {
         curr_target_bubble++;
-        bubble_diff = 
+        bubble_diff =
           getFrame1ToFrame2InRefFrameNew(
-              elastic_band_.at(0).center.pose, 
+              elastic_band_.at(0).center.pose,
               elastic_band_.at(curr_target_bubble).center.pose,
               elastic_band_.at(0).center.pose);
       }
@@ -237,7 +239,10 @@ namespace eband_local_planner{
           elastic_band_.at(goal_bubble).center.pose,
           elastic_band_.at(0).center.pose);
 
-      // Get closer to the goal than the tolerance requires before starting the 
+      distance_from_goal = sqrtf(bubble_diff.linear.x * bubble_diff.linear.x +
+                                 bubble_diff.linear.y * bubble_diff.linear.y);
+
+      // Get closer to the goal than the tolerance requires before starting the
       // final turn. The final turn may cause you to move slightly out of
       // position
       if((fabs(bubble_diff.linear.x) <= 0.6 * tolerance_trans_ &&
@@ -251,7 +256,7 @@ namespace eband_local_planner{
           in_final_goal_turn_ = true;
           ROS_DEBUG("Performing in place rotation for goal (diff): %f", orientation_diff);
           double rotation_sign = -2 * (orientation_diff < 0) + 1;
-          robot_cmd.angular.z = 
+          robot_cmd.angular.z =
             rotation_sign * min_in_place_vel_th_ + k_p_ * orientation_diff;
           if (fabs(robot_cmd.angular.z) > max_vel_th_) { // limit max rotation
             robot_cmd.angular.z = rotation_sign * max_vel_th_;
@@ -282,13 +287,13 @@ namespace eband_local_planner{
 
       // calculate an estimate of the in-place rotation threshold
       double distance_to_next_bubble = sqrt(
-          bubble_diff.linear.x * bubble_diff.linear.x + 
+          bubble_diff.linear.x * bubble_diff.linear.x +
           bubble_diff.linear.y * bubble_diff.linear.y);
       double radius_of_next_bubble = 0.7 * elastic_band_.at(1).expansion;
-      double in_place_rotation_threshold = 
-        rotation_threshold_multiplier_ * 
+      double in_place_rotation_threshold =
+        rotation_threshold_multiplier_ *
         fabs(atan2(radius_of_next_bubble,distance_to_next_bubble));
-      ROS_DEBUG("In-place rotation threshold: %f(%f,%f)", 
+      ROS_DEBUG("In-place rotation threshold: %f(%f,%f)",
           in_place_rotation_threshold, radius_of_next_bubble, distance_to_next_bubble);
 
       // check if we are above this threshold, if so then perform in-place rotation
@@ -306,7 +311,7 @@ namespace eband_local_planner{
       }
     }
 
-    // Check 3 - If we reach here, it means we need to use our PID controller to 
+    // Check 3 - If we reach here, it means we need to use our PID controller to
     // move towards the next bubble
     if (!command_provided) {
 
@@ -314,8 +319,14 @@ namespace eband_local_planner{
       double forward_sign = -2 * (bubble_diff.linear.x < 0) + 1;
       double bubble_radius = 0.7 * elastic_band_.at(0).expansion;
       double velocity_multiplier = bubble_velocity_multiplier_ * bubble_radius;
-      double linear_velocity = velocity_multiplier * max_vel_lin_;
-      linear_velocity *= cos(bubble_diff.angular.z); //decrease while turning 
+
+      double max_vel_lin = max_vel_lin_;
+      if (distance_from_goal < 0.75f) {
+        max_vel_lin = (max_vel_lin < 0.3) ? 0.15 : max_vel_lin / 2;
+      }
+
+      double linear_velocity = velocity_multiplier * max_vel_lin;
+      linear_velocity *= cos(bubble_diff.angular.z); //decrease while turning
       if (fabs(linear_velocity) > max_vel_lin_) {
         linear_velocity = forward_sign * max_vel_lin_;
       } else if (fabs(linear_velocity) < min_vel_lin_) {
@@ -332,7 +343,7 @@ namespace eband_local_planner{
         angular_velocity = rotation_sign * min_vel_th_;
       }
 
-      ROS_DEBUG("Selected velocity: lin: %f, ang: %f", 
+      ROS_DEBUG("Selected velocity: lin: %f, ang: %f",
           linear_velocity, angular_velocity);
 
       robot_cmd.linear.x = linear_velocity;
@@ -859,7 +870,7 @@ namespace eband_local_planner{
     //make sure to bound things by our velocity limits
     double lin_overshoot = sqrt(res.linear.x * res.linear.x + res.linear.y * res.linear.y) / max_vel_lin_;
     double lin_undershoot = min_vel_lin_ / sqrt(res.linear.x * res.linear.x + res.linear.y * res.linear.y);
-    if (lin_overshoot > 1.0) 
+    if (lin_overshoot > 1.0)
     {
       res.linear.x /= lin_overshoot;
       res.linear.y /= lin_overshoot;
