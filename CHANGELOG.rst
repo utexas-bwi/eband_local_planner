@@ -2,6 +2,13 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* slow down trajectory controller while close to goal. closes `#19 <https://github.com/utexas-bwi/eband_local_planner/issues/19>`_.
+* convert info message to debug. closes `#18 <https://github.com/utexas-bwi/eband_local_planner/issues/18>`_.
+* clear local costmap if global plan cannot be converted to band even on first attempt. see `#5 <https://github.com/utexas-bwi/eband_local_planner/issues/5>`_
+* Contributors: Piyush Khandelwal
+
 0.2.2 (2015-03-14)
 ------------------
 * fixed catkin lint warnings in preparation for v0.2.2 release
