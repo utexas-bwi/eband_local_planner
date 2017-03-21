@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(eband_local_planner)
 
-find_package(catkin REQUIRED 
+find_package(catkin REQUIRED
   COMPONENTS
     base_local_planner
     cmake_modules
@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
     roscpp
     tf
     tf_conversions
+    dynamic_reconfigure
 )
 
 find_package(Eigen REQUIRED)
@@ -23,6 +24,8 @@ include_directories(
   ${Eigen_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
+
+generate_dynamic_reconfigure_options(cfg/EBandPlanner.cfg)
 
 catkin_package(
   CATKIN_DEPENDS
@@ -36,16 +39,17 @@ catkin_package(
     roscpp
     tf
     tf_conversions
+    dynamic_reconfigure
   INCLUDE_DIRS include
   LIBRARIES eband_local_planner
 )
 
 # build the library
-add_library(eband_local_planner 
-  src/eband_local_planner_ros.cpp 
-  src/eband_local_planner.cpp 
-  src/conversions_and_types.cpp 
-  src/eband_visualization.cpp 
+add_library(eband_local_planner
+  src/eband_local_planner_ros.cpp
+  src/eband_local_planner.cpp
+  src/conversions_and_types.cpp
+  src/eband_visualization.cpp
   src/eband_trajectory_controller.cpp
 )
 

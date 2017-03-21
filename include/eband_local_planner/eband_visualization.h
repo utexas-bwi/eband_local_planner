@@ -43,6 +43,7 @@
 
 // classes wich are part of this pkg
 #include <eband_local_planner/conversions_and_types.h>
+#include <eband_local_planner/EBandPlannerConfig.h>
 
 // msgs
 #include <geometry_msgs/Pose2D.h>
@@ -103,6 +104,12 @@ namespace eband_local_planner{
        * @param name The name to give this instance (important for publishing)
        */
       void initialize(ros::NodeHandle& pn, costmap_2d::Costmap2DROS* costmap_ros);
+
+      /**
+       * @brief Reconfigures the parameters of the planner
+       * @param config The dynamic reconfigure configuration
+       */
+      void reconfigure(EBandPlannerConfig& config);
 
       /**
        * @brief publishes the bubbles (Position and Expansion) in a band as Marker-Array

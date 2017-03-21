@@ -75,30 +75,8 @@ namespace eband_local_planner{
       // get footprint of the robot
       footprint_spec_ = costmap_ros_->getRobotFootprint();
 
-
       // create Node Handle with name of plugin (as used in move_base for loading)
       ros::NodeHandle pn("~/" + name);
-
-      // read parameters from parameter server
-      // connectivity checking
-      pn.param("eband_min_relative_bubble_overlap_", min_bubble_overlap_, 0.7);
-
-      // bubble geometric bounds
-      pn.param("eband_tiny_bubble_distance", tiny_bubble_distance_, 0.01);
-      pn.param("eband_tiny_bubble_expansion", tiny_bubble_expansion_, 0.01);
-
-      // optimization - force calculation
-      pn.param("eband_internal_force_gain", internal_force_gain_, 1.0);
-      pn.param("eband_external_force_gain", external_force_gain_, 2.0);
-      pn.param("num_iterations_eband_optimization", num_optim_iterations_, 3);
-
-      // recursive approximation of bubble equilibrium position based
-      pn.param("eband_equilibrium_approx_max_recursion_depth", max_recursion_depth_approx_equi_, 4);
-      pn.param("eband_equilibrium_relative_overshoot", equilibrium_relative_overshoot_, 0.75);
-      pn.param("eband_significant_force_lower_bound", significant_force_, 0.15);
-
-      // use this parameter if a different weight is supplied to the costmap in dyn reconfigure
-      pn.param("costmap_weight", costmap_weight_, 10.0);
 
       // clean up band
       elastic_band_.clear();
@@ -113,6 +91,30 @@ namespace eband_local_planner{
     {
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
+  }
+
+  void EBandPlanner::reconfigure(
+    eband_local_planner::EBandPlannerConfig& config)
+  {
+    // connectivity checking
+    min_bubble_overlap_ = config.eband_min_relative_overlap;
+
+    // bubble geometric bounds
+    tiny_bubble_distance_ = config.eband_tiny_bubble_distance;
+    tiny_bubble_expansion_ = config.eband_tiny_bubble_expansion;
+
+    // optimization - force calculation
+    internal_force_gain_ = config.eband_internal_force_gain;
+    external_force_gain_ = config.eband_external_force_gain;
+    num_optim_iterations_ = config.num_iterations_eband_optimization;
+
+    // recursive approximation of bubble equilibrium position based
+    max_recursion_depth_approx_equi_ = config.eband_equilibrium_approx_max_recursion_depth;
+    equilibrium_relative_overshoot_ = config.eband_equilibrium_relative_overshoot;
+    significant_force_ = config.eband_significant_force_lower_bound;
+
+    // use this parameter if a different weight is supplied to the costmap in dyn reconfigure
+    costmap_weight_ = config.costmap_weight;
   }
 
   void EBandPlanner::setVisualization(boost::shared_ptr<EBandVisualization> eband_visual)

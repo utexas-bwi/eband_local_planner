@@ -44,6 +44,7 @@
 // classes which are part of this package
 #include <eband_local_planner/conversions_and_types.h>
 #include <eband_local_planner/eband_visualization.h>
+#include <eband_local_planner/EBandPlannerConfig.h>
 
 // geometry_msg
 #include <geometry_msgs/PoseStamped.h>
@@ -94,6 +95,13 @@ namespace eband_local_planner{
        * @param costmap The cost map to use for assigning costs to trajectories
        */
       void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+
+
+      /**
+       * @brief Reconfigures the parameters of the planner
+       * @param config The dynamic reconfigure configuration
+       */
+      void reconfigure(EBandPlannerConfig& config);
 
       /**
        * @brief passes a reference to the eband visualization object which can be used to visualize the band optimization
