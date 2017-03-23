@@ -112,7 +112,6 @@ namespace eband_local_planner{
     in_place_trans_vel_ = config.in_place_trans_vel;
     tolerance_trans_ = config.xy_goal_tolerance;
     tolerance_rot_ = config.yaw_goal_tolerance;
-    tolerance_timeout_ = config.tolerance_timeout;
     k_p_ = config.k_prop;
     k_nu_ = config.k_damp;
     ctrl_freq_ = config.Ctrl_Rate;
@@ -124,8 +123,6 @@ namespace eband_local_planner{
 
     // diffferential drive parameters
     differential_drive_hack_ = config.differential_drive;
-    k_int_ = config.k_int;
-    k_diff_ = config.k_diff;
     bubble_velocity_multiplier_ = config.bubble_velocity_multiplier;
     rotation_threshold_multiplier_ = config.rotation_threshold_multiplier;
     disallow_hysteresis_ = config.disallow_hysteresis;

@@ -138,12 +138,12 @@ namespace eband_local_planner{
 
       // parameters
       bool differential_drive_hack_;
-      double k_p_, k_nu_, k_int_, k_diff_, ctrl_freq_;
+      double k_p_, k_nu_, ctrl_freq_;
       double acc_max_, virt_mass_;
       double max_vel_lin_, max_vel_th_, min_vel_lin_, min_vel_th_;
       double min_in_place_vel_th_;
       double in_place_trans_vel_;
-      double tolerance_trans_, tolerance_rot_, tolerance_timeout_;
+      double tolerance_trans_, tolerance_rot_;
       double acc_max_trans_, acc_max_rot_;
       double rotation_correction_threshold_; // We'll do rotation correction if we're at least this far from the goal
 
