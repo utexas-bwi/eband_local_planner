@@ -8,6 +8,7 @@ find_package(catkin REQUIRED
     cmake_modules
     control_toolbox
     costmap_2d
+    dynamic_reconfigure
     geometry_msgs
     nav_core
     nav_msgs
@@ -15,7 +16,6 @@ find_package(catkin REQUIRED
     roscpp
     tf
     tf_conversions
-    dynamic_reconfigure
 )
 
 find_package(Eigen REQUIRED)
