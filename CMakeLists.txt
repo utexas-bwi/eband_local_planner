@@ -17,10 +17,10 @@ find_package(catkin REQUIRED
     tf_conversions
 )
 
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 include_directories(
   include
-  ${Eigen_INCLUDE_DIRS}
+  ${Eigen3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 
