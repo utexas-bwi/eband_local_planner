@@ -2,8 +2,8 @@
 Changelog for package eband_local_planner
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2017-07-02)
+------------------
 * Find Eigen3 and not Eigen to compile cleanly on Kinetic (`#21 <https://github.com/utexas-bwi/eband_local_planner/issues/21>`_)
 * For Indigo, find Eigen if Eigen3 not found (`#21 <https://github.com/utexas-bwi/eband_local_planner/issues/21>`_)
 * Contributors: Jack O'Quin
