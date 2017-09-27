@@ -71,41 +71,6 @@ namespace eband_local_planner{
       // create Node Handle with name of plugin (as used in move_base for loading)
       ros::NodeHandle node_private("~/" + name);
 
-      // read parameters from parameter server
-      node_private.param("max_vel_lin", max_vel_lin_, 0.75);
-      node_private.param("max_vel_th", max_vel_th_, 1.0);
-
-      node_private.param("min_vel_lin", min_vel_lin_, 0.1);
-      node_private.param("min_vel_th", min_vel_th_, 0.0);
-
-      node_private.param("min_in_place_vel_th", min_in_place_vel_th_, 0.0);
-      node_private.param("in_place_trans_vel", in_place_trans_vel_, 0.0);
-
-      node_private.param("xy_goal_tolerance", tolerance_trans_, 0.02);
-      node_private.param("yaw_goal_tolerance", tolerance_rot_, 0.04);
-      node_private.param("tolerance_timeout", tolerance_timeout_, 0.5);
-
-      node_private.param("k_prop", k_p_, 4.0);
-      node_private.param("k_damp", k_nu_, 3.5);
-
-      node_private.param("Ctrl_Rate", ctrl_freq_, 10.0); // TODO retrieve this from move base parameters
-
-      node_private.param("max_acceleration", acc_max_, 0.5);
-      node_private.param("virtual_mass", virt_mass_, 0.75);
-
-      node_private.param("max_translational_acceleration", acc_max_trans_, 0.5);
-      node_private.param("max_rotational_acceleration", acc_max_rot_, 1.5);
-
-      node_private.param("rotation_correction_threshold", rotation_correction_threshold_, 0.5);
-
-      // diffferential drive parameters
-      node_private.param("differential_drive", differential_drive_hack_, true);
-      node_private.param("k_int", k_int_, 0.005);
-      node_private.param("k_diff", k_diff_, -0.005);
-      node_private.param("bubble_velocity_multiplier", bubble_velocity_multiplier_, 2.0);
-      node_private.param("rotation_threshold_multiplier", rotation_threshold_multiplier_, 1.0); //0.75);
-      node_private.param("disallow_hysteresis", disallow_hysteresis_, false); //0.75);
-      // Ctrl_rate, k_prop, max_vel_lin, max_vel_th, tolerance_trans, tolerance_rot, min_in_place_vel_th
       in_final_goal_turn_ = false;
 
       // copy adress of costmap and Transform Listener (handed over from move_base)
@@ -133,6 +98,34 @@ namespace eband_local_planner{
     {
       ROS_WARN("This planner has already been initialized, doing nothing.");
     }
+  }
+
+
+  void EBandTrajectoryCtrl::reconfigure(
+    eband_local_planner::EBandPlannerConfig& config)
+  {
+    max_vel_lin_ = config.max_vel_lin;
+    max_vel_th_ = config.max_vel_th;
+    min_vel_lin_ = config.min_vel_lin;
+    min_vel_th_ = config.min_vel_th;
+    min_in_place_vel_th_ = config.min_in_place_vel_th;
+    in_place_trans_vel_ = config.in_place_trans_vel;
+    tolerance_trans_ = config.xy_goal_tolerance;
+    tolerance_rot_ = config.yaw_goal_tolerance;
+    k_p_ = config.k_prop;
+    k_nu_ = config.k_damp;
+    ctrl_freq_ = config.Ctrl_Rate;
+    acc_max_ = config.max_acceleration;
+    virt_mass_ = config.virtual_mass;
+    acc_max_trans_ = config.max_translational_acceleration;
+    acc_max_rot_ = config.max_rotational_acceleration;
+    rotation_correction_threshold_ = config.rotation_correction_threshold;
+
+    // diffferential drive parameters
+    differential_drive_hack_ = config.differential_drive;
+    bubble_velocity_multiplier_ = config.bubble_velocity_multiplier;
+    rotation_threshold_multiplier_ = config.rotation_threshold_multiplier;
+    disallow_hysteresis_ = config.disallow_hysteresis;
   }
 
 
@@ -306,7 +299,7 @@ namespace eband_local_planner{
         if (fabs(robot_cmd.angular.z) > max_vel_th_) { // limit max rotation
           robot_cmd.angular.z = rotation_sign * max_vel_th_;
         }
-        ROS_DEBUG("Performing in place rotation for start (diff): %f", bubble_diff.angular.z, robot_cmd.angular.z);
+        ROS_DEBUG("Performing in place rotation for start (diff): %f with rot vel: %f", bubble_diff.angular.z, robot_cmd.angular.z);
         command_provided = true;
       }
     }

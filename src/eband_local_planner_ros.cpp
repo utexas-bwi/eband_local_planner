@@ -78,15 +78,6 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
         // create Node Handle with name of plugin (as used in move_base for loading)
         ros::NodeHandle pn("~/" + name);
 
-        // read parameters from parameter server
-        // get tolerances for "Target reached"
-        pn.param("yaw_goal_tolerance", yaw_goal_tolerance_, 0.05);
-        pn.param("xy_goal_tolerance", xy_goal_tolerance_, 0.1);
-
-        // set lower bound for velocity -> if velocity in this region stop! (to avoid limit-cycles or lock)
-        pn.param("rot_stopped_vel", rot_stopped_vel_, 1e-2);
-        pn.param("trans_stopped_vel", trans_stopped_vel_, 1e-2);
-
         // advertise topics (adapted global plan and predicted local trajectory)
         g_plan_pub_ = pn.advertise<nav_msgs::Path>("global_plan", 1);
         l_plan_pub_ = pn.advertise<nav_msgs::Path>("local_plan", 1);
@@ -116,6 +107,10 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
         // initialize visualization - set node handle and pointer to costmap
         eband_visual_->initialize(pn, costmap_ros);
 
+        // create and initialize dynamic reconfigure
+        drs_.reset(new drs(pn));
+        drs::CallbackType cb = boost::bind(&EBandPlannerROS::reconfigureCallback, this, _1, _2);
+        drs_->setCallback(cb);
 
         // set initialized flag
         initialized_ = true;
@@ -127,6 +122,31 @@ PLUGINLIB_DECLARE_CLASS(eband_local_planner, EBandPlannerROS, eband_local_planne
       {
         ROS_WARN("This planner has already been initialized, doing nothing.");
       }
+    }
+
+
+    void EBandPlannerROS::reconfigureCallback(EBandPlannerConfig& config,
+      uint32_t level)
+    {
+      xy_goal_tolerance_ = config.xy_goal_tolerance;
+      yaw_goal_tolerance_ = config.yaw_goal_tolerance;
+      rot_stopped_vel_ = config.rot_stopped_vel;
+      trans_stopped_vel_ = config.trans_stopped_vel;
+
+      if (eband_)
+        eband_->reconfigure(config);
+      else
+        ROS_ERROR("Reconfigure CB called before eband planner initialization");
+
+      if (eband_trj_ctrl_)
+        eband_trj_ctrl_->reconfigure(config);
+      else
+        ROS_ERROR("Reconfigure CB called before trajectory controller initialization!");
+
+      if (eband_visual_)
+        eband_visual_->reconfigure(config);
+      else
+        ROS_ERROR("Reconfigure CB called before eband visualizer initialization");
     }
 
 

@@ -78,6 +78,13 @@ namespace eband_local_planner{
     }
   }
 
+  
+  void EBandVisualization::reconfigure(
+    eband_local_planner::EBandPlannerConfig& config)
+  {
+    marker_lifetime_ = config.marker_lifetime;
+  }
+
 
   void EBandVisualization::publishBand(std::string marker_name_space, std::vector<Bubble> band)
   {

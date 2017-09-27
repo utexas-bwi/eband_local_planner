@@ -43,11 +43,15 @@
 // abstract class from which our plugin inherits
 #include <nav_core/base_local_planner.h>
 
+// dynamic reconfigure
+#include <dynamic_reconfigure/server.h>
+
 // classes wich are parts of this pkg
 #include <eband_local_planner/eband_local_planner.h>
 #include <eband_local_planner/conversions_and_types.h>
 #include <eband_local_planner/eband_visualization.h>
 #include <eband_local_planner/eband_trajectory_controller.h>
+#include <eband_local_planner/EBandPlannerConfig.h>
 
 // local planner specific classes which provide some macros
 #include <base_local_planner/goal_functions.h>
@@ -130,6 +134,18 @@ namespace eband_local_planner{
       bool isGoalReached();
 
     private:
+
+      /**
+       * @brief Reconfigures node parameters
+       * @param config The dynamic reconfigure node configuration
+       * @param level Reconfiguration level
+       */
+      void reconfigureCallback(EBandPlannerConfig& config, uint32_t level);
+
+      typedef dynamic_reconfigure::Server<
+        eband_local_planner::EBandPlannerConfig> drs;
+      //! dynamic reconfigure server ptr
+      boost::shared_ptr<drs> drs_;
 
       // pointer to external objects (do NOT delete object)
       costmap_2d::Costmap2DROS* costmap_ros_; ///<@brief pointer to costmap

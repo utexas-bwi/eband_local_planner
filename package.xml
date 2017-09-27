@@ -26,6 +26,7 @@
   <build_depend>control_toolbox</build_depend>
   <build_depend>cmake_modules</build_depend> <!-- to find Eigen -->
   <build_depend>costmap_2d</build_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>nav_core</build_depend>
   <build_depend>nav_msgs</build_depend>
@@ -37,6 +38,7 @@
   <run_depend>base_local_planner</run_depend>
   <run_depend>control_toolbox</run_depend>
   <run_depend>costmap_2d</run_depend>
+  <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>nav_core</run_depend>
   <run_depend>nav_msgs</run_depend>
