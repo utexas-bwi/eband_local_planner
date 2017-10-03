@@ -58,6 +58,7 @@ add_library(eband_local_planner
   src/eband_visualization.cpp
   src/eband_trajectory_controller.cpp
 )
+add_dependencies(eband_local_planner ${eband_local_planner_EXPORTED_TARGETS})
 
 target_link_libraries(eband_local_planner ${catkin_LIBRARIES})
 
