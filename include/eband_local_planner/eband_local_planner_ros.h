@@ -75,6 +75,8 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <mbf_costmap_core/costmap_controller.h>
+
 
 namespace eband_local_planner{
 
@@ -82,7 +84,7 @@ namespace eband_local_planner{
    * @class EBandPlannerROS
    * @brief Plugin to the ros base_local_planner. Implements a wrapper for the Elastic Band Method
    */
-  class EBandPlannerROS : public nav_core::BaseLocalPlanner{
+  class EBandPlannerROS : public nav_core::BaseLocalPlanner, public mbf_costmap_core::CostmapController {
 
     public:
       /**
@@ -118,7 +120,7 @@ namespace eband_local_planner{
        * @param orig_global_plan The plan to pass to the controller
        * @return True if the plan was updated successfully, false otherwise
        */
-      bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
+      virtual bool setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan);
 
       /**
        * @brief Given the current position, orientation, and velocity of the robot, compute velocity commands to send to the base
@@ -132,6 +134,32 @@ namespace eband_local_planner{
        * @return True if achieved, false otherwise
        */
       bool isGoalReached();
+
+      /**
+       * @brief Calculates the velocity command based on the current robot pose given by pose. The velocity
+       * and message are not set. See the interface in move base flex.
+       * @param pose Current robot pose
+       * @param velocity
+       * @param cmd_vel Output the velocity command
+       * @param message
+       * @return a status code defined in the move base flex ExePath action.
+       */
+      virtual uint32_t computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+                                               const geometry_msgs::TwistStamped& velocity,
+                                               geometry_msgs::TwistStamped &cmd_vel,
+                                               std::string &message);
+
+      /**
+       * @brief Returns true, if the goal is reached. Currently does not respect the parameters given.
+       * @return true, if the goal is reached
+       */
+      virtual bool isGoalReached(double /*dist_tolerance*/, double /*angle_tolerance*/);
+
+      /**
+       * @brief Canceles the planner.
+       * @return True on cancel success.
+       */
+      virtual bool cancel();
 
     private:
 
@@ -175,6 +203,7 @@ namespace eband_local_planner{
 
       // flags
       bool initialized_;
+      bool canceled_;
       boost::mutex odom_mutex_; // mutex to lock odometry-callback while data is read from topic
 
 

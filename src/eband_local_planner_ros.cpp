@@ -43,10 +43,15 @@
 // abstract class from which our plugin inherits
 #include <nav_core/base_local_planner.h>
 
+// Result status codes from move base flex
+#include <mbf_msgs/ExePathActionResult.h>
+
 
 // register this planner as a BaseGlobalPlanner plugin
 // (see http://www.ros.org/wiki/pluginlib/Tutorials/Writing%20and%20Using%20a%20Simple%20Plugin)
 PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocalPlanner)
+// Also register as a plugin for move base flex
+PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, mbf_costmap_core::CostmapController)
 
 
   namespace eband_local_planner{
@@ -55,7 +60,7 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
 
 
     EBandPlannerROS::EBandPlannerROS(std::string name, tf::TransformListener* tf, costmap_2d::Costmap2DROS* costmap_ros)
-      : costmap_ros_(NULL), tf_(NULL), initialized_(false)
+      : costmap_ros_(NULL), tf_(NULL), initialized_(false), canceled_(false)
     {
       // initialize planner
       initialize(name, tf, costmap_ros);
@@ -148,7 +153,7 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       else
         ROS_ERROR("Reconfigure CB called before eband visualizer initialization");
     }
-
+    
 
     // set global plan to wrapper and pass it to eband
     bool EBandPlannerROS::setPlan(const std::vector<geometry_msgs::PoseStamped>& orig_global_plan)
@@ -164,6 +169,9 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       //reset the global plan
       global_plan_.clear();
       global_plan_ = orig_global_plan;
+
+      // activate the planner
+      canceled_ = false;
 
       // transform global plan to the map frame we are working in
       // this also cuts the plan off (reduces it to local window)
@@ -214,40 +222,32 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       return true;
     }
 
-
-    bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
+    uint32_t EBandPlannerROS::computeVelocityCommands(const geometry_msgs::PoseStamped& pose,
+                                             const geometry_msgs::TwistStamped& /*velocity*/,
+                                             geometry_msgs::TwistStamped &cmd_vel,
+                                             std::string &/*message*/)
     {
       // check if plugin initialized
       if(!initialized_)
       {
         ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
-        return false;
+        return mbf_msgs::ExePathResult::NOT_INITIALIZED;
       }
 
-      // instantiate local variables
-      //std::vector<geometry_msgs::PoseStamped> local_plan;
-      tf::Stamped<tf::Pose> global_pose;
-      geometry_msgs::PoseStamped global_pose_msg;
+      if (canceled_) {
+        ROS_ERROR("This planner was cancelled!");
+        return mbf_msgs::ExePathResult::CANCELED;
+      }
+
       std::vector<geometry_msgs::PoseStamped> tmp_plan;
-
-      // get curent robot position
-      ROS_DEBUG("Reading current robot Position from costmap and appending it to elastic band.");
-      if(!costmap_ros_->getRobotPose(global_pose))
-      {
-        ROS_WARN("Could not retrieve up to date robot pose from costmap for local planning.");
-        return false;
-      }
-
-      // convert robot pose to frame in plan and set position in band at which to append
-      tf::poseStampedTFToMsg(global_pose, global_pose_msg);
-      tmp_plan.assign(1, global_pose_msg);
+      tmp_plan.assign(1, pose);
       eband_local_planner::AddAtPosition add_frames_at = add_front;
 
       // set it to elastic band and let eband connect it
       if(!eband_->addFrames(tmp_plan, add_frames_at))
       {
         ROS_WARN("Could not connect robot pose to existing elastic band.");
-        return false;
+        return mbf_msgs::ExePathResult::INTERNAL_ERROR;
       }
 
       // get additional path-frames which are now in moving window
@@ -259,7 +259,7 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       {
         // if plan could not be tranformed abort control and local planning
         ROS_WARN("Could not transform the global plan to the frame of the controller");
-        return false;
+        return mbf_msgs::ExePathResult::TF_ERROR;
       }
 
       // also check if there really is a plan
@@ -267,7 +267,7 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       {
         // if global plan passed in is empty... we won't do anything
         ROS_WARN("Transformed plan is empty. Aborting local planner!");
-        return false;
+        return mbf_msgs::ExePathResult::INVALID_PATH;
       }
 
       ROS_DEBUG("Retrieved start-end-counts are: (%d, %d)", plan_start_end_counter.at(0), plan_start_end_counter.at(1));
@@ -304,7 +304,7 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
         }
         else {
           ROS_WARN("Failed to add frames to existing band");
-          return false;
+          return mbf_msgs::ExePathResult::INTERNAL_ERROR;
         }
       }
       else
@@ -319,7 +319,7 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
         // display current band
         if(eband_->getBand(current_band))
           eband_visual_->publishBand("bubbles", current_band);
-        return false;
+        return mbf_msgs::ExePathResult::INTERNAL_ERROR;
       }
 
       // get current Elastic Band and
@@ -328,14 +328,14 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       if(!eband_trj_ctrl_->setBand(current_band))
       {
         ROS_DEBUG("Failed to to set current band to Trajectory Controller");
-        return false;
+        return mbf_msgs::ExePathResult::INTERNAL_ERROR;
       }
 
       // set Odometry to controller
       if(!eband_trj_ctrl_->setOdometry(base_odom_))
       {
         ROS_DEBUG("Failed to to set current odometry to Trajectory Controller");
-        return false;
+        return mbf_msgs::ExePathResult::INTERNAL_ERROR;
       }
 
       // get resulting commands from the controller
@@ -343,13 +343,13 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       if(!eband_trj_ctrl_->getTwist(cmd_twist, goal_reached_))
       {
         ROS_DEBUG("Failed to calculate Twist from band in Trajectory Controller");
-        return false;
+        return mbf_msgs::ExePathResult::INTERNAL_ERROR;
       }
 
 
       // set retrieved commands to reference variable
       ROS_DEBUG("Retrieving velocity command: (%f, %f, %f)", cmd_twist.linear.x, cmd_twist.linear.y, cmd_twist.angular.z);
-      cmd_vel = cmd_twist;
+      cmd_vel.twist = cmd_twist;
 
 
       // publish plan
@@ -362,6 +362,63 @@ PLUGINLIB_EXPORT_CLASS(eband_local_planner::EBandPlannerROS, nav_core::BaseLocal
       // display current band
       if(eband_->getBand(current_band))
         eband_visual_->publishBand("bubbles", current_band);
+
+      if (canceled_){
+        return mbf_msgs::ExePathResult::CANCELED;
+      }
+
+      return mbf_msgs::ExePathResult::SUCCESS;
+    }
+
+    
+    bool EBandPlannerROS::isGoalReached(double /*xy_tolerance*/, double /*yaw_tolerance*/)
+    {
+      return isGoalReached();
+    }
+
+
+    bool EBandPlannerROS::cancel()
+    {
+      ROS_DEBUG("Cancel planner");
+      canceled_ = true;
+      return true;
+    }
+
+
+    bool EBandPlannerROS::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
+    {
+      // check if plugin initialized
+      if(!initialized_)
+      {
+        ROS_ERROR("This planner has not been initialized, please call initialize() before using this planner");
+        return false;
+      }
+
+      // instantiate local variables
+      //std::vector<geometry_msgs::PoseStamped> local_plan;
+      tf::Stamped<tf::Pose> global_pose;
+      geometry_msgs::PoseStamped global_pose_msg;
+
+      // get curent robot position
+      ROS_DEBUG("Reading current robot Position from costmap and appending it to elastic band.");
+      if(!costmap_ros_->getRobotPose(global_pose))
+      {
+        ROS_WARN("Could not retrieve up to date robot pose from costmap for local planning.");
+        return false;
+      }
+
+      // convert robot pose to frame in plan and set position in band at which to append
+      tf::poseStampedTFToMsg(global_pose, global_pose_msg);
+
+      geometry_msgs::TwistStamped cmd_vel_stamped;
+      cmd_vel_stamped.twist = cmd_vel;
+      geometry_msgs::TwistStamped velocity; // Dummy
+      std::string message = ""; // Dummy
+      if(computeVelocityCommands(global_pose_msg, velocity, cmd_vel_stamped, message) != 0)
+      {
+        return false;
+      }
+      cmd_vel = cmd_vel_stamped.twist;
 
       return true;
     }

@@ -15,6 +15,7 @@ find_package(catkin REQUIRED
     roscpp
     tf
     tf_conversions
+    mbf_costmap_core
 )
 
 find_package(Eigen3)
