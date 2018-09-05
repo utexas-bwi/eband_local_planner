@@ -24,7 +24,6 @@
 
   <build_depend>base_local_planner</build_depend>
   <build_depend>control_toolbox</build_depend>
-  <build_depend>cmake_modules</build_depend> <!-- to find Eigen -->
   <build_depend>costmap_2d</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>geometry_msgs</build_depend>

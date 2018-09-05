@@ -17,17 +17,11 @@ find_package(catkin REQUIRED
     tf_conversions
 )
 
-find_package(Eigen3)
-if(NOT EIGEN3_FOUND)
-  # Fallback to cmake_modules
-  find_package(cmake_modules REQUIRED)
-  find_package(Eigen REQUIRED)
-  set(Eigen3_INCLUDE_DIRS ${EIGEN_INCLUDE_DIRS})
-endif()
+find_package(Eigen3 REQUIRED)
 
 include_directories(
   include
-  ${Eigen3_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -48,6 +42,7 @@ catkin_package(
     dynamic_reconfigure
   INCLUDE_DIRS include
   LIBRARIES eband_local_planner
+  DEPENDS EIGEN3
 )
 
 # build the library

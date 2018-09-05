@@ -38,7 +38,7 @@
 #include <eband_local_planner/eband_local_planner_ros.h>
 
 // pluginlib macros (defines, ...)
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 
 // abstract class from which our plugin inherits
 #include <nav_core/base_local_planner.h>
