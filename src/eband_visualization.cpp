@@ -171,13 +171,13 @@ namespace eband_local_planner{
 
     //before converting to msg - check whether internal, external or resulting forces - switch color
     Color marker_color = green;
-    if(marker_name_space.compare("internal_forces") == 0)
+    if(marker_name_space == "internal_forces")
       marker_color = blue;
 
-    if(marker_name_space.compare("external_forces") == 0)
+    if(marker_name_space == "external_forces")
       marker_color = red;
 
-    if(marker_name_space.compare("resulting_forces") == 0)
+    if(marker_name_space == "resulting_forces")
       marker_color = green;
 
     for(int i = 0; i < ((int) forces.size()); i++)
@@ -340,10 +340,8 @@ namespace eband_local_planner{
       Eigen::Quaterniond rotate_quat(c, s*rotation_axis.x(), s*rotation_axis.y(), s*rotation_axis.z());
 
       // transform quaternion back from Eigen to ROS
-      tf::Quaternion orientation_tf;
       geometry_msgs::Quaternion orientation_msg;
-      tf::quaternionEigenToTF(rotate_quat, orientation_tf);
-      tf::quaternionTFToMsg(orientation_tf, orientation_msg);
+      tf2::convert(rotate_quat, orientation_msg);
 
       // finally set orientation of marker
       marker.pose.orientation = orientation_msg;

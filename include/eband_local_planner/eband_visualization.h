@@ -57,8 +57,10 @@
 
 // transforms
 #include <angles/angles.h>
-#include <tf/tf.h>
-#include <tf_conversions/tf_eigen.h>
+#include <tf2/convert.h>
+#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2/LinearMath/Quaternion.h>
 
 // costmap & geometry
 #include <costmap_2d/costmap_2d_ros.h>

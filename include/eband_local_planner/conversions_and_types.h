@@ -44,12 +44,15 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Pose2D.h>
+#include <geometry_msgs/TransformStamped.h>
 
 // transforms
 #include <angles/angles.h>
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
-#include <tf/transform_datatypes.h>
+#include <tf2/convert.h>
+#include <tf2/transform_datatypes.h>
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
 
 // costmap & geometry
 #include <costmap_2d/costmap_2d_ros.h>
@@ -96,7 +99,7 @@ namespace eband_local_planner{
    * @param transformed_plan Populated with the transformed plan
    * @param number of start and end frame counted from the end of the global plan
    */
-  bool transformGlobalPlan(const tf::TransformListener& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
+  bool transformGlobalPlan(const tf2_ros::Buffer& tf, const std::vector<geometry_msgs::PoseStamped>& global_plan, 
       costmap_2d::Costmap2DROS& costmap, const std::string& global_frame, 
       std::vector<geometry_msgs::PoseStamped>& transformed_plan, std::vector<int>& start_end_counts_from_end);
 

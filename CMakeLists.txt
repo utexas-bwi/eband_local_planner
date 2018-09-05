@@ -13,8 +13,9 @@ find_package(catkin REQUIRED
     nav_msgs
     pluginlib
     roscpp
-    tf
-    tf_conversions
+    tf2_eigen
+    tf2_geometry_msgs
+    tf2_ros
 )
 
 find_package(Eigen3)
@@ -43,8 +44,9 @@ catkin_package(
     nav_msgs
     pluginlib
     roscpp
-    tf
-    tf_conversions
+    tf2_eigen
+    tf2_geometry_msgs
+    tf2_ros
     dynamic_reconfigure
   INCLUDE_DIRS include
   LIBRARIES eband_local_planner
