@@ -99,8 +99,8 @@ namespace eband_local_planner{
         return false;
       }
 
-      geometry_msgs::TransformStamped transform;
-      transform = tf.lookupTransform(global_frame, ros::Time(), plan_pose.header.frame_id, plan_pose.header.stamp,
+      geometry_msgs::TransformStamped transformStamped;
+      transformStamped = tf.lookupTransform(global_frame, ros::Time(), plan_pose.header.frame_id, plan_pose.header.stamp,
           plan_pose.header.frame_id);
 
       //let's get the pose of the robot in the frame of the plan
@@ -108,7 +108,7 @@ namespace eband_local_planner{
       robot_pose.setIdentity();
       robot_pose.frame_id_ = costmap.getBaseFrameID();
       robot_pose.stamp_ = ros::Time();
-      tf.transform(robot_pose, robot_pose, plan_pose.header.frame_id);
+      transformPose(tf, plan_pose.header.frame_id, robot_pose, robot_pose);
 
       //we'll keep points on the plan that are within the window that we're looking at
 
@@ -162,10 +162,8 @@ namespace eband_local_planner{
 
         const geometry_msgs::PoseStamped& pose = global_plan[i];
         tf2::convert(pose, tf_pose);
-        tf2::convert(transform, tf_transform);
-        tf_pose.setData(tf_transform * tf_pose);
-        tf_pose.stamp_ = tf_transform.stamp_;
-        tf_pose.frame_id_ = global_frame;
+        tf2::convert(transformStamped, tf_transform);
+        transform(global_frame, tf_transform, tf_pose, tf_pose);
         tf2::toMsg(tf_pose, newer_pose);
 
         transformed_plan.push_back(newer_pose);
@@ -218,5 +216,18 @@ namespace eband_local_planner{
     return sqrt(max_distance_sqr);
   }
 
+  void transform(const std::string& target_frame, const tf2::Stamped<tf2::Transform>& reference_pose, 
+                const tf2::Stamped<tf2::Transform>& pose_in, tf2::Stamped<tf2::Transform>& pose_out) {
+    pose_out.setData(reference_pose * pose_in);
+    pose_out.stamp_ = reference_pose.stamp_;
+    pose_out.frame_id_ = target_frame;
+  }
 
+  void transformPose(const tf2_ros::Buffer& tf, const std::string& target_frame, const tf2::Stamped<tf2::Transform>& stamped_in, tf2::Stamped<tf2::Transform>& stamped_out) {
+    geometry_msgs::TransformStamped transformStamped;
+    transformStamped = tf.lookupTransform(target_frame, stamped_in.frame_id_, stamped_in.stamp_);
+    tf2::Stamped<tf2::Transform> tf_transform;
+    tf2::convert(transformStamped, tf_transform);
+    transform(target_frame, tf_transform, stamped_in, stamped_out);
+  }
 }

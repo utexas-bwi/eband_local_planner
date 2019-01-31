@@ -51,6 +51,7 @@
 #include <tf2/convert.h>
 #include <tf2/transform_datatypes.h>
 #include <tf2/utils.h>
+#include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 
@@ -110,6 +111,10 @@ namespace eband_local_planner{
    */
   double getCircumscribedRadius(costmap_2d::Costmap2DROS& costmap);
 
+  void transform(const std::string& target_frame, const tf2::Stamped<tf2::Transform>& reference_pose, 
+                const tf2::Stamped<tf2::Transform>& pose_in, tf2::Stamped<tf2::Transform>& pose_out);
+  
+  void transformPose(const tf2_ros::Buffer& tf, const std::string& target_frame, const tf2::Stamped<tf2::Transform>& stamped_in, tf2::Stamped<tf2::Transform>& stamped_out);
 };
 #endif
 
