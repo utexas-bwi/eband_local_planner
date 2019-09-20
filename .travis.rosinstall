@@ -1,0 +1,4 @@
+- git:
+    local-name: eband_local_planner
+    uri: https://github.com/utexas-bwi/eband_local_planner
+    version: melodic
