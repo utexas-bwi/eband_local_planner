@@ -106,10 +106,10 @@ namespace eband_local_planner{
 				     plan_pose.header.frame_id);
 
       //let's get the pose of the robot in the frame of the plan
-      tf2::Stamped<tf2::Transform> robot_pose;
-      robot_pose.setIdentity();
-      robot_pose.frame_id_ = costmap.getBaseFrameID();
-      robot_pose.stamp_ = ros::Time();
+      geometry_msgs::TransformStamped robot_pose;
+      robot_pose.transform.rotation.w = 1; // identity quaternion
+      robot_pose.header.frame_id = costmap.getBaseFrameID();
+      robot_pose.header.stamp = ros::Time();
       tf.transform(robot_pose, robot_pose, plan_pose.header.frame_id);
       //we'll keep points on the plan that are within the window that we're looking at
 
@@ -136,8 +136,8 @@ namespace eband_local_planner{
       //we need to loop to a point on the plan that is within a certain distance of the robot
       while(i < (unsigned int)global_plan.size() && sq_dist > sq_dist_threshold)
 	 {
-	   double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-	   double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+	   double x_diff = robot_pose.transform.translation.x - global_plan[i].pose.position.x;
+	   double y_diff = robot_pose.transform.translation.y - global_plan[i].pose.position.y;
 	   sq_dist = x_diff * x_diff + y_diff * y_diff;
 
 	   // --- start - modification w.r.t. base_local_planner
@@ -158,8 +158,8 @@ namespace eband_local_planner{
       //now we'll transform until points are outside of our distance threshold
       while(i < (unsigned int)global_plan.size() && sq_dist < sq_dist_threshold)
 	 {
-	   double x_diff = robot_pose.getOrigin().x() - global_plan[i].pose.position.x;
-	   double y_diff = robot_pose.getOrigin().y() - global_plan[i].pose.position.y;
+	   double x_diff = robot_pose.transform.translation.x - global_plan[i].pose.position.x;
+	   double y_diff = robot_pose.transform.translation.y - global_plan[i].pose.position.y;
 	   sq_dist = x_diff * x_diff + y_diff * y_diff;
 
 	   const geometry_msgs::PoseStamped& pose = global_plan[i];
