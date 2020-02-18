@@ -36,8 +36,7 @@
  *********************************************************************/
 
 #include <eband_local_planner/eband_trajectory_controller.h>
-#include <tf/transform_datatypes.h>
-
+#include <tf2/utils.h>
 
 namespace eband_local_planner{
 
@@ -163,7 +162,7 @@ namespace eband_local_planner{
   {
     const double pi = 3.14159265;
     const double t1 = atan2(heading.linear.y, heading.linear.x);
-    const double t2 = tf::getYaw(pose.orientation);
+    const double t2 = tf2::getYaw(pose.orientation);
     const double d = t1-t2;
 
     if (fabs(d)<pi)
@@ -242,8 +241,8 @@ namespace eband_local_planner{
           fabs(bubble_diff.linear.y) <= 0.6 * tolerance_trans_) ||
           in_final_goal_turn_) {
         // Calculate orientation difference to goal orientation (not captured in bubble_diff)
-        double robot_yaw = tf::getYaw(elastic_band_.at(0).center.pose.orientation);
-        double goal_yaw = tf::getYaw(elastic_band_.at((int)elastic_band_.size() - 1).center.pose.orientation);
+        double robot_yaw = tf2::getYaw(elastic_band_.at(0).center.pose.orientation);
+        double goal_yaw = tf2::getYaw(elastic_band_.at((int)elastic_band_.size() - 1).center.pose.orientation);
         float orientation_diff = angles::normalize_angle(goal_yaw - robot_yaw);
         if (fabs(orientation_diff) > tolerance_rot_) {
           in_final_goal_turn_ = true;
@@ -811,7 +810,7 @@ namespace eband_local_planner{
     double y1 = frame1.position.y - ref_frame.position.y;
     double x2 = frame2.position.x - ref_frame.position.x;
     double y2 = frame2.position.y - ref_frame.position.y;
-    double yaw_ref = tf::getYaw(ref_frame.orientation);
+    double yaw_ref = tf2::getYaw(ref_frame.orientation);
 
     double x_diff = x2 - x1;
     double y_diff = y2 - y1;

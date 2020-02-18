@@ -1,0 +1,17 @@
+sudo: required
+dist: trusty
+language: generic
+compiler:
+  - gcc
+env:
+  global:
+    - CATKIN_CONFIG='--no-install'  # work around kinova-ros install bug
+    - ROS_DISTRO="melodic"
+    - ROS_REPOSITORY_PATH=http://packages.ros.org/ros/ubuntu
+    - UPSTREAM_WORKSPACE=file
+  matrix:
+    - BUILD_PKGS_WHITELIST="eband_local_planner"
+install:
+  - git clone https://github.com/ros-industrial/industrial_ci.git .ci_config
+script:
+  - source .ci_config/travis.sh

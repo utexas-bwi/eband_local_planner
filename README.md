@@ -7,3 +7,5 @@ a [ROS](http://wiki.ros.org) package, implementing a plugin to the
 [move_base](http://wiki.ros.org/move_base) 2D navigation system.
 
 It implements the Elastic Band method on the SE2 manifold.
+
+Currently support indigo, kinetic distro, and melodic under testing.

@@ -13,13 +13,14 @@ find_package(catkin REQUIRED
     nav_msgs
     pluginlib
     roscpp
-    tf
-    tf_conversions
-)
+    tf2_eigen
+    tf2_geometry_msgs
+    tf2_ros
+    )
 
-find_package(Eigen3)
-if(NOT EIGEN3_FOUND)
-  # Fallback to cmake_modules
+  find_package(Eigen3)
+  if(NOT EIGEN3_FOUND)
+    # Fallback to cmake_modules
   find_package(cmake_modules REQUIRED)
   find_package(Eigen REQUIRED)
   set(Eigen3_INCLUDE_DIRS ${EIGEN_INCLUDE_DIRS})
@@ -43,8 +44,9 @@ catkin_package(
     nav_msgs
     pluginlib
     roscpp
-    tf
-    tf_conversions
+    tf2_eigen
+    tf2_geometry_msgs
+    tf2_ros    
     dynamic_reconfigure
   INCLUDE_DIRS include
   LIBRARIES eband_local_planner
